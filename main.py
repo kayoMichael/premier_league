@@ -1,6 +1,6 @@
-from ranking import RankingTable
-from bs4 import BeautifulSoup
+from premier_league import RankingTable
 
 
-
-new = RankingTable().get_prem_ranking()
+if __name__ == "__main__":
+    new = RankingTable().get_prem_ranking_list()
+    print(new)
