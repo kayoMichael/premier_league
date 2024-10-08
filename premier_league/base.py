@@ -12,7 +12,7 @@ from premier_league.utils.methods import clean_xml_text
 
 
 @dataclass
-class PremierLeague:
+class BaseScrapper:
     url: str
     page: ElementTree = field(default_factory=lambda: None, init=False)
 
