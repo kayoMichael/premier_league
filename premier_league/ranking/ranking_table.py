@@ -14,7 +14,6 @@ from reportlab.lib.colors import HexColor
 from ..utils.methods import remove_qualification_and_relegation
 from ..utils.xpath import RANKING
 
-import pdb
 
 class RankingTable(BaseScrapper):
     def __init__(self, target_season: str = None):
@@ -50,6 +49,8 @@ class RankingTable(BaseScrapper):
                 raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-25').")
             elif int(self.target_season[:4]) > self.current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
+            elif int(self.target_season[:4]) < 1992:
+                raise ValueError("Invalid target_season. The First Premier League season was 1992-93. It cannot be before 1992.")
             self.season = self.target_season
             self.prev_season = f"{int(self.season[:4]) - 1}-{str(int(self.season[:4]))[2:]}"
 
@@ -92,26 +93,30 @@ class RankingTable(BaseScrapper):
     def find_european_competition_spot(self) -> dict:
         # FA Cup Winner for this Season (Potential Europa League Spot)
         fa_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_FA_Cup")
-        fa_winner = self.find_cup_winner(fa_cup_page)
+        fa_winner = self.find_tournament_winner(fa_cup_page, RANKING.CUP_WINNER)
 
         # EFL Cup Winner for this Season (Potential Europa Conference League Spot)
         cup_name = "EFL_Cup"
         if int(self.season[:4]) <= 2015:
             cup_name = "Football_League_Cup"
         efl_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_{cup_name}")
-        efl_winner = self.find_cup_winner(efl_cup_page)
+        efl_winner = self.find_tournament_winner(efl_cup_page, RANKING.CUP_WINNER)
 
         # Previous Champions League Winner (Potential Champions League Spot)
         cl_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.prev_season}_UEFA_Champions_League")
-        cl_winner = self.find_uefa_winner(cl_page)
+        cl_winner = self.find_tournament_winner(cl_page, RANKING.UEFA_WINNER)
 
-        # Previous Eu League Winner (Potential Champions League Spot)
-        europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.prev_season}_UEFA_Europa_League")
-        europa_winner = self.find_uefa_winner(europa_page)
+        # Previous Europa League Winner (Potential Champions League Spot)
+        europa_winner = None
+        if int(self.prev_season[:4]) >= 2009:
+            europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.prev_season}_UEFA_Europa_League")
+            europa_winner = self.find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
 
         # Previous Europa Conference League Winner (Potential Europa League Spot)
-        conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.prev_season}_UEFA_Europa_Conference_League")
-        conference_winner = self.find_uefa_winner(conference_page)
+        conference_winner = None
+        if int(self.prev_season[:4]) >= 2021:
+            conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.prev_season}_UEFA_Europa_Conference_League")
+            conference_winner = self.find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
 
         return {f"{self.season} EFL Cup Winner": efl_winner, f"{self.season} FA Cup Winner": fa_winner,
                 f"{self.prev_season} Champions League Winner": cl_winner,
@@ -119,13 +124,8 @@ class RankingTable(BaseScrapper):
                 "{prev_seaoson} Conference League Winner": conference_winner}
 
     @staticmethod
-    def find_cup_winner(cup_page):
-        result = cup_page.get_list_by_xpath(RANKING.CUP_WINNER)
-        return result[0] if result else None
-
-    @staticmethod
-    def find_uefa_winner(cup_page):
-        result = cup_page.get_list_by_xpath(RANKING.UEFA_WINNER)
+    def find_tournament_winner(cup_page, xpath: str) -> str:
+        result = cup_page.get_list_by_xpath(xpath)
         return result[0] if result else None
 
     @staticmethod
