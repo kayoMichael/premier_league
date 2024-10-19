@@ -43,16 +43,18 @@ class BaseScrapper:
             current_year = current_date.year
             current_month = current_date.month
             if current_month >= 8:
-                self.season = f"{current_year}-{str(current_year + 1)[2:]}"
+                self.season = f"{current_year}-{str(current_year + 1)[2:]}" if self.url[-1] != "/" else f"{current_year}-{str(current_year + 1)}"
             else:
-                self.season = f"{current_year - 1}-{str(current_year)[2:]}"
+                self.season = f"{current_year - 1}-{str(current_year)[2:]}" if self.url[-1] != "/" else f"{current_year - 1}-{str(current_year)}"
         else:
-            if not re.match(r'^\d{4}-\d{2}$', self.target_season):
-                raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-25') with a regular hyphen.")
+            if not re.match(r'^\d{4}-\d{4}$', self.target_season):
+                raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-2025') with a regular hyphen.")
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
-                raise ValueError("Invalid target_season. The First Premier League season was 1992-93. It cannot be before 1992.")
+                raise ValueError("Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992.")
+            if self.url[-1] != "/":
+                self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
             self.season = self.target_season
 
         self.url = self.url.replace("{SEASON}", self.season)
