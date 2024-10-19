@@ -16,25 +16,56 @@ from ..utils.xpath import RANKING
 
 
 class RankingTable(BaseScrapper):
+    """
+    A class to scrape and process Premier League ranking data.
+
+    This class inherits from BaseScrapper and provides methods to retrieve,
+    process, and output Premier League ranking data in various formats.
+
+    Attributes:
+        season (str): The current Premier League season.
+        prev_season (str): The previous Premier League season.
+        target_season (str): The specific season to scrape data for, if provided.
+        current_date (datetime): The current date.
+        page: The scraped web page containing the ranking data.
+        ranking_list (list): The processed ranking data.
+    """
+
     def __init__(self, target_season: str = None):
+        """
+        Initialize the RankingTable instance.
+
+        Args:
+            target_season (str, optional): The specific season to scrape data for.
+                                           If not provided, the current season is used.
+        """
         self.season = None
         self.prev_season = None
         self.target_season = target_season
         self.current_date = datetime.now()
-        self.initialize_season()
+        self._initialize_season()
         super().__init__(f"https://en.wikipedia.org/wiki/{self.season}_Premier_League")
         self.page = self.request_url_page()
-        self.ranking_list = self.init_ranking_table()
+        self.ranking_list = self._init_ranking_table()
 
-    def init_ranking_table(self) -> list:
+    def _init_ranking_table(self) -> list:
+        """
+        Initialize the ranking table by scraping and processing the data.
+
+        Returns:
+            list: A list of lists containing the processed ranking data.
+        """
         ranking_rows = remove_qualification_and_relegation(self.get_list_by_xpath(RANKING.CURRENT_RANKING))
         ranking_list = [ranking_rows[i: i + 10] for i in range(0, len(ranking_rows), 10)]
         return ranking_list
 
-    def get_prem_ranking_list(self) -> list:
-        return self.ranking_list
+    def _initialize_season(self) -> None:
+        """
+        Initialize the current and previous seasons based on the current date or target season.
 
-    def initialize_season(self) -> None:
+        Raises:
+            ValueError: If the target_season is invalid or in an incorrect format.
+        """
         if not self.target_season:
             current_year = self.current_date.year
             current_month = self.current_date.month
@@ -54,12 +85,33 @@ class RankingTable(BaseScrapper):
             self.season = self.target_season
             self.prev_season = f"{int(self.season[:4]) - 1}-{str(int(self.season[:4]))[2:]}"
 
+    def get_prem_ranking_list(self) -> list:
+        """
+        Get the Premier League ranking list.
+
+        Returns:
+            list: The processed ranking data.
+        """
+        return self.ranking_list
+
     def get_prem_ranking_csv(self, file_name: str) -> None:
+        """
+        Save the Premier League ranking data to a CSV file.
+
+        Args:
+            file_name (str): The name of the file to save the data to (without extension).
+        """
         with open(f'{file_name}.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(self.ranking_list)
 
     def get_prem_ranking_json(self, file_name: str) -> None:
+        """
+        Save the Premier League ranking data to a JSON file.
+
+        Args:
+            file_name (str): The name of the file to save the data to (without extension).
+        """
         json_data = []
         headers = self.ranking_list[0]
         for row in self.ranking_list[1:]:
@@ -69,6 +121,15 @@ class RankingTable(BaseScrapper):
             json.dump(json_data, jsonfile, indent=2)
 
     def get_prem_ranking_pdf(self, file_name: str) -> None:
+        """
+        Generate a PDF file containing the Premier League ranking table.
+
+        This method creates a formatted PDF file with the ranking table, including
+        color-coded rows for European qualification spots and relegation.
+
+        Args:
+            file_name (str): The name of the file to save the PDF to (without extension).
+        """
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
         pdf = canvas.Canvas(f"{file_name}.pdf", pagesize=A3)
 
@@ -83,9 +144,9 @@ class RankingTable(BaseScrapper):
         table = Table(self.ranking_list)
 
         if int(self.season[:4]) > 2019:
-            european_spots = self.find_european_qualification_spot()
+            european_spots = self._find_european_qualification_spot()
         else:
-            european_spots = self.scrap_european_qualification_spot()
+            european_spots = self._scrap_european_qualification_spot()
 
         # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
         relegation = -3
@@ -113,7 +174,16 @@ class RankingTable(BaseScrapper):
 
         pdf.save()
 
-    def find_european_qualification_spot(self) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
+    def _find_european_qualification_spot(self) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
+        """
+        Determine the European qualification spots for the current season.
+
+        This method analyzes the current ranking and determines which teams qualify for
+        various European competitions based on their league position and cup performances.
+
+        Returns:
+            list: A list of tuples containing styling information for the PDF table.
+        """
         m_conference = None
         m_europa = []
         m_champions = []
@@ -154,8 +224,8 @@ class RankingTable(BaseScrapper):
 
         # Determine if Conference League Qualifying Team already qualified to a higher Tournament
         if m_conference is not None:
-            champions_matches = self.is_team_in_european_competition(m_conference, m_champions, all_current_teams)
-            europa_matches = self.is_team_in_european_competition(m_conference, m_europa, all_current_teams)
+            champions_matches = self._is_team_in_european_competition(m_conference, m_champions, all_current_teams)
+            europa_matches = self._is_team_in_european_competition(m_conference, m_europa, all_current_teams)
             if not champions_matches and not europa_matches and all_current_teams[m_conference] not in cl_european_spots:
                 uecl_style = ('BACKGROUND', (0, m_conference), (-1, m_conference), HexColor("#6aa84f"))
                 conference_counter -= 1
@@ -177,32 +247,41 @@ class RankingTable(BaseScrapper):
         return [uecl_style] + uel_style + cl_style
 
     def _find_european_competition_spot(self) -> dict:
+        """
+        Find the winners of various competitions that may affect European qualification.
+
+        This method scrapes data for FA Cup, EFL Cup, Champions League, Europa League,
+        and Europa Conference League winners for the current season.
+
+        Returns:
+            dict: A dictionary containing the winners of each competition.
+        """
         # FA Cup Winner for this Season (Potential Europa League Spot)
         fa_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_FA_Cup")
-        fa_winner = self.find_tournament_winner(fa_cup_page, RANKING.CUP_WINNER)
+        fa_winner = self._find_tournament_winner(fa_cup_page, RANKING.CUP_WINNER)
 
         # EFL Cup Winner for this Season (Potential Europa Conference League Spot)
         cup_name = "EFL_Cup"
         if int(self.season[:4]) <= 2015:
             cup_name = "Football_League_Cup"
         efl_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_{cup_name}")
-        efl_winner = self.find_tournament_winner(efl_cup_page, RANKING.CUP_WINNER)
+        efl_winner = self._find_tournament_winner(efl_cup_page, RANKING.CUP_WINNER)
 
         # Previous Champions League Winner (Potential Champions League Spot)
         cl_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Champions_League")
-        cl_winner = self.find_tournament_winner(cl_page, RANKING.UEFA_WINNER)
+        cl_winner = self._find_tournament_winner(cl_page, RANKING.UEFA_WINNER)
 
         # Previous Europa League Winner (Potential Champions League Spot)
         europa_winner = None
         if int(self.prev_season[:4]) >= 2009:
             europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_League")
-            europa_winner = self.find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
+            europa_winner = self._find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
 
         # Previous Europa Conference League Winner (Potential Europa League Spot)
         conference_winner = None
         if int(self.prev_season[:4]) >= 2021:
             conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_Conference_League")
-            conference_winner = self.find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
+            conference_winner = self._find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
 
         return {"EFL": efl_winner,
                 "FA": fa_winner,
@@ -210,7 +289,15 @@ class RankingTable(BaseScrapper):
                 "UEL": europa_winner,
                 "UECL": conference_winner}
 
-    def scrap_european_qualification_spot(self) -> list:
+    def _scrap_european_qualification_spot(self) -> list:
+        """
+        Scrape European qualification spots for seasons prior to 2019-20.
+
+        This method is used for older seasons where the qualification rules were different.
+
+        Returns:
+            list: A list of tuples containing styling information for the PDF table.
+        """
         possible_european_spot = []
         if int(self.season[:4]) == 1997:
             possible_european_spot = ["UEFA Cup", "Cup Winners' Cup", "Champions League", "UEFA Intertoto Cup"]
@@ -243,17 +330,31 @@ class RankingTable(BaseScrapper):
         return style
 
     @staticmethod
-    def is_team_in_european_competition(team_index, competition_indices, all_teams):
+    def _is_team_in_european_competition(team_index, competition_indices, all_teams):
+        """
+        Check if a team is already qualified for a European competition.
+
+        Args:
+            team_index (int): The index of the team to check.
+            competition_indices (list): Indices of teams already qualified for a competition.
+            all_teams (list): List of all teams in the current premier league.
+
+        Returns:
+            list: A list of indices where the team appears in the competition qualifiers.
+        """
         return [i for i in competition_indices if all_teams[team_index] == all_teams[i]]
 
     @staticmethod
-    def find_tournament_winner(cup_page, xpath: str) -> str:
+    def _find_tournament_winner(cup_page, xpath: str) -> str:
+        """
+        Find the winner of a specific tournament from a scraped page.
+
+        Args:
+            cup_page: The scraped page containing the tournament information.
+            xpath (str): The XPath to locate the winner information.
+
+        Returns:
+            str: The name of the tournament winner, or None if not found.
+        """
         result = cup_page.get_list_by_xpath(xpath)
         return result[0] if result else None
-
-    @staticmethod
-    def additional_scrapper(additional_url) -> BaseScrapper:
-        scrapper = BaseScrapper(url=additional_url)
-        scrapper.page = BaseScrapper.request_url_page(scrapper)
-        return scrapper
-
