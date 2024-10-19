@@ -15,20 +15,54 @@ import re
 
 
 class PlayerSeasonLeaders(BaseScrapper):
-    def __init__(self, stat_type: Literal['G', 'A'],  target_season: str = None):
+    """
+    A class to scrape and process top player statistics (goals or assists) for a Premier League season.
+
+    This class inherits from BaseScrapper and provides methods to retrieve, process, and export
+    player statistics in various formats (list, CSV, JSON, PDF).
+
+    Attributes:
+        stat_type (Literal['G', 'A']): The type of statistic to scrape ('G' for goals, 'A' for assists).
+        stat_url (str): The URL to scrape data from.
+        page: The scraped web page content.
+        season_top_players_list (list): Processed list of top players and their statistics.
+    """
+
+    def __init__(self, stat_type: Literal['G', 'A'], target_season: str = None):
+        """
+        Initialize the PlayerSeasonLeaders object.
+
+        Args:
+            stat_type (Literal['G', 'A']): The type of statistic to scrape ('G' for goals, 'A' for assists).
+            target_season (str, optional): The specific season to scrape data for. Defaults to None.
+        """
         self.stat_type = stat_type
         self.stat_url = self._get_url()
         super().__init__(self.stat_url, target_season)
         self.page = self.request_url_page()
         self.season_top_players_list = self._init_top_stats_table()
 
-    def _get_url(self):
+    def _get_url(self) -> str:
+        """
+        Generate the URL for scraping based on the stat_type.
+
+        Returns:
+            str: The URL to scrape data from.
+        """
         if self.stat_type == "G":
             return "https://www.worldfootball.net/scorer/eng-premier-league-{SEASON}/"
         else:
             return "https://www.worldfootball.net/assists/eng-premier-league-{SEASON}/"
 
     def _init_top_stats_table(self) -> list[list[str]]:
+        """
+        Initialize and process the top statistics table.
+
+        This method scrapes the raw data, cleans it, and structures it into a list of lists.
+
+        Returns:
+            list[list[str]]: Processed list of top players and their statistics.
+        """
         player_list = self.get_list_by_xpath(PLAYERS.PLAYER_SCORING)
         top_players = [item for item in player_list if not re.match(r'^\d+\.$', item) and
                        not re.match(r'^\d{4}/\d{4}$', item) and
@@ -38,28 +72,47 @@ class PlayerSeasonLeaders(BaseScrapper):
 
         partitioned = [["Name", "Country", "Club", "Goals", "In Play Goals+Penalty"]] if self.stat_type == "G" else \
             [["Name", "Country", "Club", "Assists"]]
+
         i = 0
-        parition = 4 if self.stat_type == "A" else 5
+        partition = 4 if self.stat_type == "A" else 5
         while i < len(top_players):
-            sublist = top_players[i:i + parition]
+            sublist = top_players[i:i + partition]
             if len(sublist) > 3 and not sublist[3].isdigit():
-                sublist = top_players[i:i + parition + 1]
+                sublist = top_players[i:i + partition + 1]
                 sublist[2:4] = [f"{sublist[2]}, {sublist[3]}"]
-                i += (parition + 1)
+                i += (partition + 1)
             else:
-                i += parition
+                i += partition
             partitioned.append(sublist)
-        return partitioned[:21]
+        return partitioned
 
     def get_top_stats_list(self) -> list:
+        """
+        Get the processed list of top players and their statistics.
+
+        Returns:
+            list: The season_top_players_list attribute.
+        """
         return self.season_top_players_list
 
-    def get_top_stats_csv(self, file_name):
+    def get_top_stats_csv(self, file_name: str):
+        """
+        Export the top statistics to a CSV file.
+
+        Args:
+            file_name (str): The name of the file to save (without extension).
+        """
         with open(f'{file_name}.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(self.season_top_players_list)
 
-    def get_top_stats_json(self, file_name):
+    def get_top_stats_json(self, file_name: str):
+        """
+        Export the top statistics to a JSON file.
+
+        Args:
+            file_name (str): The name of the file to save (without extension).
+        """
         json_data = []
         headers = self.season_top_players_list[0]
         for row in self.season_top_players_list[1:]:
@@ -68,10 +121,20 @@ class PlayerSeasonLeaders(BaseScrapper):
         with open(f'{file_name}.json', 'w') as jsonfile:
             json.dump(json_data, jsonfile, indent=2)
 
-    def get_top_stats_pdf(self, file_name):
+    def get_top_stats_pdf(self, file_name: str):
+        """
+        Export the top 20 player statistics to a PDF file.
+
+        This method creates a formatted PDF with a title, table of statistics,
+        and applies styling to enhance readability.
+
+        Args:
+            file_name (str): The name of the file to save (without extension).
+        """
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
         pdf = canvas.Canvas(f"{file_name}.pdf", pagesize=A3)
 
+        # Set up the title
         pdf.setFont("Arial", 16)
         main_words = "Goal Scorer" if self.stat_type == "G" else "Assist Leader"
         title = f"{self.season} Premier League Top {main_words}"
@@ -79,8 +142,9 @@ class PlayerSeasonLeaders(BaseScrapper):
         pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
         pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
+        # Create and style the table
         pdf.setFont("Arial", 12)
-        table = Table(self.season_top_players_list)
+        table = Table(self.season_top_players_list[:22])
 
         table_styles = [('BACKGROUND', (0, 0), (-1, 0), HexColor("#cccccc")),
                         ('BACKGROUND', (0, 1), (-1, 1), HexColor("#FFD700")),
@@ -92,6 +156,8 @@ class PlayerSeasonLeaders(BaseScrapper):
                         ('TOPPADDING', (0, 0), (-1, -1), 12),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black)]
         table.setStyle(TableStyle(table_styles))
+
+        # Position and draw the table
         table.wrapOn(pdf, 0, 0)
         table_width, table_height = table.wrapOn(pdf, A3[0] - 2 * inch, A3[1] - 2 * inch)
         x = (A3[0] - table_width) / 2
