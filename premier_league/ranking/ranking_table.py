@@ -1,6 +1,5 @@
 from premier_league.base import BaseScrapper
 import csv
-from datetime import datetime
 import json
 import re
 from reportlab.pdfgen import canvas
@@ -24,9 +23,7 @@ class RankingTable(BaseScrapper):
 
     Attributes:
         season (str): The current Premier League season.
-        prev_season (str): The previous Premier League season.
         target_season (str): The specific season to scrape data for, if provided.
-        current_date (datetime): The current date.
         page: The scraped web page containing the ranking data.
         ranking_list (list): The processed ranking data.
     """
@@ -39,12 +36,7 @@ class RankingTable(BaseScrapper):
             target_season (str, optional): The specific season to scrape data for.
                                            If not provided, the current season is used.
         """
-        self.season = None
-        self.prev_season = None
-        self.target_season = target_season
-        self.current_date = datetime.now()
-        self._initialize_season()
-        super().__init__(f"https://en.wikipedia.org/wiki/{self.season}_Premier_League")
+        super().__init__("https://en.wikipedia.org/wiki/{SEASON}_Premier_League", target_season=target_season)
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
 
@@ -58,32 +50,6 @@ class RankingTable(BaseScrapper):
         ranking_rows = remove_qualification_and_relegation(self.get_list_by_xpath(RANKING.CURRENT_RANKING))
         ranking_list = [ranking_rows[i: i + 10] for i in range(0, len(ranking_rows), 10)]
         return ranking_list
-
-    def _initialize_season(self) -> None:
-        """
-        Initialize the current and previous seasons based on the current date or target season.
-
-        Raises:
-            ValueError: If the target_season is invalid or in an incorrect format.
-        """
-        if not self.target_season:
-            current_year = self.current_date.year
-            current_month = self.current_date.month
-            if current_month >= 8:
-                self.season = f"{current_year}-{str(current_year + 1)[2:]}"
-                self.prev_season = f"{current_year - 1}-{str(current_year)[2:]}"
-            else:
-                self.season = f"{current_year - 1}-{str(current_year)[2:]}"
-                self.prev_season = f"{current_year - 2}-{str(current_year - 1)[2:]}"
-        else:
-            if not re.match(r'^\d{4}-\d{2}$', self.target_season):
-                raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-25') with a regular hyphen.")
-            elif int(self.target_season[:4]) > self.current_date.year:
-                raise ValueError("Invalid target_season. It cannot be in the future.")
-            elif int(self.target_season[:4]) < 1992:
-                raise ValueError("Invalid target_season. The First Premier League season was 1992-93. It cannot be before 1992.")
-            self.season = self.target_season
-            self.prev_season = f"{int(self.season[:4]) - 1}-{str(int(self.season[:4]))[2:]}"
 
     def get_prem_ranking_list(self) -> list:
         """
@@ -261,27 +227,20 @@ class RankingTable(BaseScrapper):
         fa_winner = self._find_tournament_winner(fa_cup_page, RANKING.CUP_WINNER)
 
         # EFL Cup Winner for this Season (Potential Europa Conference League Spot)
-        cup_name = "EFL_Cup"
-        if int(self.season[:4]) <= 2015:
-            cup_name = "Football_League_Cup"
-        efl_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_{cup_name}")
+        efl_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_EFL_Cup")
         efl_winner = self._find_tournament_winner(efl_cup_page, RANKING.CUP_WINNER)
 
         # Previous Champions League Winner (Potential Champions League Spot)
         cl_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Champions_League")
         cl_winner = self._find_tournament_winner(cl_page, RANKING.UEFA_WINNER)
 
-        # Previous Europa League Winner (Potential Champions League Spot)
-        europa_winner = None
-        if int(self.prev_season[:4]) >= 2009:
-            europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_League")
-            europa_winner = self._find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
+        # Europa League Winner (Potential Champions League Spot)
+        europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_League")
+        europa_winner = self._find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
 
-        # Previous Europa Conference League Winner (Potential Europa League Spot)
-        conference_winner = None
-        if int(self.prev_season[:4]) >= 2021:
-            conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_Conference_League")
-            conference_winner = self._find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
+        # Europa Conference League Winner (Potential Europa League Spot)
+        conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_Conference_League")
+        conference_winner = self._find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
 
         return {"EFL": efl_winner,
                 "FA": fa_winner,

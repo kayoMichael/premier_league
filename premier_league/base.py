@@ -1,7 +1,9 @@
 from http.client import HTTPException
 from xml.etree import ElementTree
 
+from datetime import datetime
 import requests
+import re
 from dataclasses import dataclass, field
 from requests import Response
 from bs4 import BeautifulSoup
@@ -26,6 +28,34 @@ class BaseScrapper:
 
     url: str
     page: ElementTree = field(default_factory=lambda: None, init=False)
+    season: str = field(default=None, init=False)
+    target_season: str = field(default=None)
+
+    def __post_init__(self):
+        """
+        Initialize the current and previous seasons based on the current date or target season.
+
+        Raises:
+            ValueError: If the target_season is invalid or in an incorrect format.
+        """
+        current_date = datetime.now()
+        if not self.target_season:
+            current_year = current_date.year
+            current_month = current_date.month
+            if current_month >= 8:
+                self.season = f"{current_year}-{str(current_year + 1)[2:]}"
+            else:
+                self.season = f"{current_year - 1}-{str(current_year)[2:]}"
+        else:
+            if not re.match(r'^\d{4}-\d{2}$', self.target_season):
+                raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-25') with a regular hyphen.")
+            elif int(self.target_season[:4]) > current_date.year:
+                raise ValueError("Invalid target_season. It cannot be in the future.")
+            elif int(self.target_season[:4]) < 1992:
+                raise ValueError("Invalid target_season. The First Premier League season was 1992-93. It cannot be before 1992.")
+            self.season = self.target_season
+
+        self.url = self.url.replace("{SEASON}", self.season)
 
     def make_request(self) -> Response:
         """
