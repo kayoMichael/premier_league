@@ -1,5 +1,3 @@
-import pdb
-
 from premier_league.base import BaseScrapper
 from typing import Literal
 from ..utils.xpath import PLAYERS
