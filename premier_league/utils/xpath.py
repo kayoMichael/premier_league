@@ -4,4 +4,4 @@ class RANKING:
     UEFA_WINNER: str = "//table[contains(@class, 'infobox vcalendar')]//tbody//tr[.//th[contains(text(), 'Champions')]]//td//text()"
 
 class PLAYERS:
-    PLAYER_SCORING: str = "//table//tr//td//text()"
+    PLAYER_STATS: str = "//table//tr//td//text()"

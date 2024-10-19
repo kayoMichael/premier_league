@@ -1,17 +1,19 @@
-from premier_league.base import BaseScrapper
+import csv
+import json
+import re
 from typing import Literal
-from ..utils.xpath import PLAYERS
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A3
-from reportlab.lib.units import inch
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from reportlab.platypus import Table, TableStyle
+
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-import json
-import csv
-import re
+from reportlab.lib.pagesizes import A3
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
+
+from premier_league.base import BaseScrapper
+from ..utils.xpath import PLAYERS
 
 
 class PlayerSeasonLeaders(BaseScrapper):
@@ -63,7 +65,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         Returns:
             list[list[str]]: Processed list of top players and their statistics.
         """
-        player_list = self.get_list_by_xpath(PLAYERS.PLAYER_SCORING)
+        player_list = self.get_list_by_xpath(PLAYERS.PLAYER_STATS)
         top_players = [item for item in player_list if not re.match(r'^\d+\.$', item) and
                        not re.match(r'^\d{4}/\d{4}$', item) and
                        item.strip() and
