@@ -1,5 +1,6 @@
 from premier_league import RankingTable
-
+from premier_league import PlayerSeasonLeaders
 
 if __name__ == "__main__":
-    RankingTable().get_prem_ranking_pdf("ranking")
+    print(PlayerSeasonLeaders("A", "2005-2006").get_top_scorers_list())
+
