@@ -1,5 +1,3 @@
-import pdb
-
 from premier_league.base import BaseScrapper
 import csv
 from datetime import datetime
@@ -89,6 +87,11 @@ class RankingTable(BaseScrapper):
         else:
             european_spots = self.scrap_european_qualification_spot()
 
+        # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
+        relegation = -3
+        if self.season == "1994-95":
+            relegation = -4
+
         static_table_styles = [('BACKGROUND', (0, 0), (-1, 0), HexColor("#cccccc")),
                                ('BACKGROUND', (0, 1), (-1, 4), HexColor("#aaff88")),
                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
@@ -98,10 +101,9 @@ class RankingTable(BaseScrapper):
                                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
                                ('TOPPADDING', (0, 0), (-1, -1), 12),
                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                               ('BACKGROUND', (0, -3), (-1, -1), HexColor("#e06666"))]
+                               ('BACKGROUND', (0, relegation), (-1, -1), HexColor("#e06666"))]
 
         all_styles = static_table_styles + european_spots
-        pdb.set_trace()
         table.setStyle(TableStyle(all_styles))
         table.wrapOn(pdf, 0, 0)
         table_width, table_height = table.wrapOn(pdf, A3[0] - 2 * inch, A3[1] - 2 * inch)
@@ -209,7 +211,36 @@ class RankingTable(BaseScrapper):
                 "UECL": conference_winner}
 
     def scrap_european_qualification_spot(self) -> list:
-        pass
+        possible_european_spot = []
+        if int(self.season[:4]) == 1997:
+            possible_european_spot = ["UEFA Cup", "Cup Winners' Cup", "Champions League", "UEFA Intertoto Cup"]
+        elif int(self.season[:4]) < 1997:
+            possible_european_spot = ["UEFA Cup", "Cup Winners' Cup", "Champions League"]
+        elif int(self.season[:4]) <= 2007:
+            possible_european_spot = ["UEFA Cup", "Intertoto Cup", "Champions League"]
+        elif int(self.season[:4]) <= 2021:
+            possible_european_spot = ["Champions League", "Europa League"]
+
+        qualified = {}
+        for tournament in possible_european_spot:
+            qualified_teams = []
+            xpath = f"//tr[.//th/a[contains(text(), \"{tournament}\")]]/td//text()"
+            teams = self.get_list_by_xpath(xpath)
+            for item in teams:
+                if "(" in item or ")" in item or "Fair Play" in item:
+                    continue
+                elif re.search(r'F\.C\.', item, flags=re.IGNORECASE):
+                    qualified_teams.append(re.sub(r'\s*F\.C\.\s*', ' ', item, flags=re.IGNORECASE).strip())
+                else:
+                    qualified_teams.append(item)
+            qualified[tournament] = qualified_teams
+        style = []
+        colors = [HexColor("#aaff88"), HexColor("#99cc00"), HexColor("#6aa84f"), HexColor("#e06666")]
+        for index, tournament in enumerate(qualified.keys()):
+            for team in qualified[tournament]:
+                team_index = self.ranking_list.index([i for i in self.ranking_list if team in i][0])
+                style.append(('BACKGROUND', (0, team_index), (-1, team_index), colors[index]))
+        return style
 
     @staticmethod
     def is_team_in_european_competition(team_index, competition_indices, all_teams):
