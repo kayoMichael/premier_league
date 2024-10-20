@@ -1,5 +1,4 @@
-from premier_league import RankingTable
-
+from premier_league import RankingTable, Transfers
 
 if __name__ == "__main__":
-    RankingTable().get_prem_ranking_pdf("ranking")
+    Transfers().print_transfer_table("West Ham United")

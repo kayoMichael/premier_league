@@ -5,3 +5,4 @@ class RANKING:
 
 class PLAYERS:
     PLAYER_STATS: str = "//table//tr//td//text()"
+    TRANSFERS: str = '//div[@class="box"]'

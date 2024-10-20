@@ -133,22 +133,22 @@ class BaseScrapper:
         bsoup: BeautifulSoup = self.parse_to_html()
         return self.convert_to_xml(bsoup=bsoup)
 
-    def get_list_by_xpath(self, xpath: str, remove_empty: Optional[bool] = True) -> Optional[list]:
+    def get_list_by_xpath(self, xpath: str, clean: Optional[bool] = True) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
 
         Args:
             xpath (str): The XPath query to execute.
-            remove_empty (bool, optional): Whether to remove empty elements. Defaults to True.
+            clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
         elements: list = self.page.xpath(xpath)
-        if remove_empty:
+        if clean:
             elements_valid: list = [clean_xml_text(e) for e in elements if clean_xml_text(e)]
         else:
-            elements_valid: list = [clean_xml_text(e) for e in elements]
+            elements_valid: list = [e for e in elements]
         return elements_valid or []
 
     def get_text_by_xpath(
