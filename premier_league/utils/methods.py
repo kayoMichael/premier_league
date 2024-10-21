@@ -65,4 +65,4 @@ def export_to_json(file_name: str, data: list[list], data_2: list[list] = None, 
         json_data[header_2] = json_data_2
 
     with open(f'{file_name}.json', 'w') as json_file:
-        json.dump(json_data, json_file, indent=4)
+        json.dump(json_data, json_file, indent=4, ensure_ascii=False)
