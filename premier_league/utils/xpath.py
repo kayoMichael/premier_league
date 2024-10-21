@@ -5,3 +5,6 @@ class RANKING:
 
 class PLAYERS:
     PLAYER_STATS: str = "//table//tr//td//text()"
+    TRANSFER_TABLES: str = '//div[@class="box"]'
+    TRANSFER_HEADER: str = './/div[@class="head"]/h2/text()'
+    TRANSFER_DATA: str = './/div[@class="data"]//table//tr//text()'
