@@ -59,7 +59,7 @@ def export_to_json(file_name: str, data: list[list], data_2: list[list] = None, 
 
     if data_2 and not header_2:
         raise ValueError("Header for the second data set is required.")
-    else:
+    elif data_2 and header_2:
         keys_2 = data_2[0]
         json_data_2 = [dict(zip(keys_2, row)) for row in data_2[1:]]
         json_data[header_2] = json_data_2

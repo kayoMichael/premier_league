@@ -1,5 +1,3 @@
-import csv
-import json
 import re
 from typing import Literal
 
@@ -14,6 +12,7 @@ from reportlab.platypus import Table, TableStyle
 
 from premier_league.base import BaseScrapper
 from ..utils.xpath import PLAYERS
+from ..utils.methods import export_to_json, export_to_csv
 
 
 class PlayerSeasonLeaders(BaseScrapper):
@@ -97,31 +96,25 @@ class PlayerSeasonLeaders(BaseScrapper):
         """
         return self.season_top_players_list
 
-    def get_top_stats_csv(self, file_name: str):
+    def get_top_stats_csv(self, file_name: str, header: str = None):
         """
         Export the top statistics to a CSV file.
 
         Args:
             file_name (str): The name of the file to save (without extension).
+            header    (str, optional): The header for the CSV file. Defaults to None.
         """
-        with open(f'{file_name}.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(self.season_top_players_list)
+        export_to_csv(file_name, self.season_top_players_list, header)
 
-    def get_top_stats_json(self, file_name: str):
+    def get_top_stats_json(self, file_name: str, header: str = None):
         """
         Export the top statistics to a JSON file.
 
         Args:
             file_name (str): The name of the file to save (without extension).
+            header    (str, optional): The header for the JSON file. Defaults to None.
         """
-        json_data = []
-        headers = self.season_top_players_list[0]
-        for row in self.season_top_players_list[1:]:
-            json_data.append(dict(zip(headers, row)))
-
-        with open(f'{file_name}.json', 'w') as jsonfile:
-            json.dump(json_data, jsonfile, indent=2)
+        export_to_json(file_name, self.season_top_players_list, header_1=header)
 
     def get_top_stats_pdf(self, file_name: str):
         """

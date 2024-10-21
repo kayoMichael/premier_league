@@ -1,6 +1,4 @@
 from premier_league.base import BaseScrapper
-import csv
-import json
 import re
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A3
@@ -10,7 +8,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-from ..utils.methods import remove_qualification_and_relegation
+from ..utils.methods import remove_qualification_and_relegation, export_to_csv, export_to_json
 from ..utils.xpath import RANKING
 
 
@@ -60,31 +58,25 @@ class RankingTable(BaseScrapper):
         """
         return self.ranking_list
 
-    def get_prem_ranking_csv(self, file_name: str) -> None:
+    def get_prem_ranking_csv(self, file_name: str, header: str = None) -> None:
         """
         Save the Premier League ranking data to a CSV file.
 
         Args:
             file_name (str): The name of the file to save the data to (without extension).
+            header    (str): The header to include in the CSV file.
         """
-        with open(f'{file_name}.csv', 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(self.ranking_list)
+        export_to_csv(file_name, self.ranking_list, header)
 
-    def get_prem_ranking_json(self, file_name: str) -> None:
+    def get_prem_ranking_json(self, file_name: str, header: str = None) -> None:
         """
         Save the Premier League ranking data to a JSON file.
 
         Args:
             file_name (str): The name of the file to save the data to (without extension).
+            header    (str): The header to include in the JSON file.
         """
-        json_data = []
-        headers = self.ranking_list[0]
-        for row in self.ranking_list[1:]:
-            json_data.append(dict(zip(headers, row)))
-
-        with open(f'{file_name}.json', 'w') as jsonfile:
-            json.dump(json_data, jsonfile, indent=2)
+        export_to_json(file_name, self.ranking_list, header_1 = header)
 
     def get_prem_ranking_pdf(self, file_name: str) -> None:
         """
