@@ -1,6 +1,7 @@
 from typing import Union
 import csv
 import json
+import os
 
 
 def remove_duplicates(seq) -> list: return list(dict.fromkeys(seq))
@@ -55,6 +56,7 @@ def export_to_csv(file_name: str, data: list[list], header: str = None):
 
 
 def export_to_dict(data: list[list], data_2: list[list] = None, header_1: str = None, header_2: str = None):
+    os.makedirs("files", exist_ok=True)
     keys = data[0]
 
     json_data = [dict(zip(keys, row)) for row in data[1:]]
@@ -74,7 +76,8 @@ def export_to_dict(data: list[list], data_2: list[list] = None, header_1: str = 
 
 
 def export_to_json(file_name: str, data: list[list], data_2: list[list] = None, header_1: str = None, header_2: str = None):
+    os.makedirs("files", exist_ok=True)
     json_data = export_to_dict(data, data_2, header_1, header_2)
 
-    with open(f'{file_name}.json', 'w') as json_file:
+    with open(f'files/{file_name}.json', 'w') as json_file:
         json.dump(json_data, json_file, indent=4, ensure_ascii=False)

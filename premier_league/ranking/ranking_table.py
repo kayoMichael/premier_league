@@ -1,5 +1,4 @@
-import pdb
-
+import os
 from premier_league.base import BaseScrapper
 import re
 from reportlab.pdfgen import canvas
@@ -103,7 +102,8 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the PDF to (without extension).
         """
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
-        pdf = canvas.Canvas(f"{file_name}.pdf", pagesize=A3)
+        os.makedirs("files", exist_ok=True)
+        pdf = canvas.Canvas(f"files/{file_name}.pdf", pagesize=A3)
 
         pdf.setFont("Arial", 16)
         title = f"Premier League Table {self.season}"

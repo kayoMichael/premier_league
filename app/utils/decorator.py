@@ -11,6 +11,7 @@ def safe_file_cleanup(func):
             result = func(*args, **kwargs)
             file_path = g.temp_state.get('file_path')
             print(file_path)
+
             @after_this_request
             def cleanup(response):
                 try:
