@@ -1,3 +1,5 @@
+import pdb
+
 from premier_league.base import BaseScrapper
 import re
 from reportlab.pdfgen import canvas
@@ -8,7 +10,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-from ..utils.methods import remove_qualification_and_relegation, export_to_csv, export_to_json
+from ..utils.methods import remove_qualification_relegation_and_css, export_to_csv, export_to_json, export_to_dict
 from ..utils.xpath import RANKING
 
 
@@ -45,7 +47,7 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
-        ranking_rows = remove_qualification_and_relegation(self.get_list_by_xpath(RANKING.CURRENT_RANKING))
+        ranking_rows = remove_qualification_relegation_and_css(self.get_list_by_xpath(RANKING.CURRENT_RANKING))
         ranking_list = [ranking_rows[i: i + 10] for i in range(0, len(ranking_rows), 10)]
         return ranking_list
 
@@ -76,7 +78,19 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the data to (without extension).
             header    (str): The header to include in the JSON file.
         """
-        export_to_json(file_name, self.ranking_list, header_1 = header)
+        export_to_json(file_name, self.ranking_list, header_1=header)
+
+    def get_prem_ranking_dict(self, header: str = None) -> dict:
+        """
+        Get the Premier League ranking data as a dictionary.
+
+        Args:
+            header (str): The header to include in the dictionary. (Parent Key for the entire data)
+
+        Returns:
+            dict: The processed ranking data as a dictionary.
+        """
+        return export_to_dict(self.ranking_list, header_1=header)
 
     def get_prem_ranking_pdf(self, file_name: str) -> None:
         """
