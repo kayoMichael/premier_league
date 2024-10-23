@@ -1,5 +1,5 @@
 from premier_league import Transfers
-from premier_league.players.transfers import TeamNotFoundError
+from premier_league.transfers.transfers import TeamNotFoundError
 from typing import Literal
 import os
 
