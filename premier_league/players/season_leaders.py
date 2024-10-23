@@ -87,34 +87,38 @@ class PlayerSeasonLeaders(BaseScrapper):
             partitioned.append(sublist)
         return partitioned
 
-    def get_top_stats_list(self) -> list:
+    def get_top_stats_list(self, limit: int = None) -> list:
         """
         Get the processed list of top players and their statistics.
 
+        Args:
+            limit (int, optional): The number of top players to include. Defaults to None.
         Returns:
             list: The season_top_players_list attribute.
         """
-        return self.season_top_players_list
+        return self.season_top_players_list[:limit if limit else 100]
 
-    def get_top_stats_csv(self, file_name: str, header: str = None):
+    def get_top_stats_csv(self, file_name: str, header: str = None, limit: int = None):
         """
         Export the top statistics to a CSV file.
 
         Args:
             file_name (str): The name of the file to save (without extension).
             header    (str, optional): The header for the CSV file. Defaults to None.
+            limit     (int, optional): The number of top players to include. Defaults to None.
         """
-        export_to_csv(file_name, self.season_top_players_list, header)
+        export_to_csv(file_name, self.get_top_stats_list(limit), header)
 
-    def get_top_stats_json(self, file_name: str, header: str = None):
+    def get_top_stats_json(self, file_name: str, header: str = None, limit: int = None):
         """
         Export the top statistics to a JSON file.
 
         Args:
             file_name (str): The name of the file to save (without extension).
             header    (str, optional): The header for the JSON file. Defaults to None.
+            limit     (int, optional): The number of top players to include. Defaults to None.
         """
-        export_to_json(file_name, self.season_top_players_list, header_1=header)
+        export_to_json(file_name, self.get_top_stats_list(limit), header_1=header)
 
     def get_top_stats_pdf(self, file_name: str):
         """

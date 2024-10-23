@@ -48,7 +48,7 @@ class BaseScrapper:
                 self.season = f"{current_year - 1}-{str(current_year)[2:]}" if self.url[-1] != "/" else f"{current_year - 1}-{str(current_year)}"
         else:
             if not re.match(r'^\d{4}-\d{4}$', self.target_season):
-                raise ValueError("Invalid format for target_season. Please use 'YYYY-YY' (e.g., '2024-2025') with a regular hyphen.")
+                raise ValueError("Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen.")
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
