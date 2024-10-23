@@ -46,13 +46,19 @@ def remove_qualification_relegation_and_css(data):
     return result
 
 
-def export_to_csv(file_name: str, data: list[list], header: str = None):
+def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, header: str = None, header_2: str = None):
     with open(f"files/{file_name}.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
         if header:
             writer.writerow([header])
             writer.writerow([])
         writer.writerows(data)
+
+        if data_2 and header_2:
+            writer.writerow([])
+            writer.writerow([header_2])
+            writer.writerow([])
+            writer.writerows(data_2)
 
 
 def export_to_dict(data: list[list], data_2: list[list] = None, header_1: str = None, header_2: str = None):

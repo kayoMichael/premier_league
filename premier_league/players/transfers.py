@@ -175,12 +175,11 @@ class Transfers(BaseScrapper):
             TeamNotFoundError: If the specified team is not found in the current season.
         """
         if transfer_type == "both":
-            export_to_csv(file_name,  self.transfer_in_table(team), f"{team} {self.season} Transfers In")
-            export_to_csv(file_name,  self.transfer_out_table(team), f"{team} {self.season} Transfers Out")
+            export_to_csv(file_name,  self.transfer_in_table(team), self.transfer_out_table(team), f"{team} {self.season} Transfers In", f"{team} {self.season} Transfers Out")
         elif transfer_type == "in":
-            export_to_csv(file_name,  self.transfer_in_table(team), f"{team} {self.season} Transfers In")
+            export_to_csv(file_name,  self.transfer_in_table(team), header=f"{team} {self.season} Transfers In")
         else:
-            export_to_csv(file_name,  self.transfer_out_table(team), f"{team} {self.season} Transfers Out")
+            export_to_csv(file_name,  self.transfer_out_table(team), header=f"{team} {self.season} Transfers Out")
 
     def transfer_json(self, team: str, file_name: str, transfer_type: Literal["in", "out", "both"] = "both"):
         """
