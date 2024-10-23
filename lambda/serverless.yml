@@ -1,0 +1,49 @@
+service: Premier_League_Data_Scrapper
+
+
+provider:
+  name: aws
+  region: ca-central-1
+  stage: ${opt:stage, 'dev'}
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+
+
+functions:
+  TransferPremierLeagueData:
+    handler: src/transfers_lambda.lambda_handler
+    environment:
+      S3_BUCKET_NAME: REPLACE_ME_BUCKET
+    runtime: python3.11
+    timeout: 30
+    memorySize: 1024
+    package:
+      exclude:
+        - ./app
+    events:
+      - http:
+          path: /transfers_in
+          method: get
+          cors: false
+          private: true
+      - http:
+          path: /transfers_out
+          method: get
+          cors: false
+          private: true
+      - http:
+          path: /transfers_csv
+          method: put
+          cors: false
+          private: true
+      - http:
+          path: /transfers_json
+          method: get
+          cors: false
+          private: true
+
+plugins:
+  - serverless-python-requirements
