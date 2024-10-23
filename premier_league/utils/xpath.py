@@ -3,6 +3,7 @@ class RANKING:
     CUP_WINNER: str = "//table[contains(@class, 'infobox vcard')]//tbody//tr[.//th[contains(text(), 'Champions')]]//td//text()"
     UEFA_WINNER: str = "//table[contains(@class, 'infobox vcalendar')]//tbody//tr[.//th[contains(text(), 'Champions')]]//td//text()"
 
+
 class PLAYERS:
     PLAYER_STATS: str = "//table//tr//td//text()"
     TRANSFER_TABLES: str = '//div[@class="box"]'
