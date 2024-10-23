@@ -9,6 +9,18 @@ transfer_bp = Blueprint('transfers', __name__)
 
 @transfer_bp.route('/all_teams', methods=['GET'])
 def get_all_teams():
+    """Get a list of all Premier League teams.
+
+    This endpoint returns all teams in the Premier League for a given season.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+
+    Returns:
+        tuple: JSON response containing:
+            - list: Array of team objects with team details
+            - int: HTTP status code
+    """
     season = request.args.get("season")
     response = TransferService().get_all_current_teams(season)
     return jsonify(response[0]), response[1]
@@ -16,6 +28,22 @@ def get_all_teams():
 
 @transfer_bp.route('/transfers/in', methods=['GET'])
 def get_transfer_in_data():
+    """Get incoming transfer data for a specific team.
+
+    This endpoint returns all players transferred into the specified team.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        team (str, required): Team name or identifier
+
+    Returns:
+        tuple: JSON response containing:
+            - list: Array of transfer objects with player and transfer details
+            - int: HTTP status code
+
+    Error Responses:
+        400: Missing team parameter - when team is not provided
+    """
     season = request.args.get("season")
     team = request.args.get("team")
     if team is None:
@@ -26,6 +54,22 @@ def get_transfer_in_data():
 
 @transfer_bp.route('/transfers/out', methods=['GET'])
 def get_transfer_out_data():
+    """Get outgoing transfer data for a specific team.
+
+    This endpoint returns all players transferred out from the specified team.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        team (str, required): Team name or identifier
+
+    Returns:
+        tuple: JSON response containing:
+            - list: Array of transfer objects with player and transfer details
+            - int: HTTP status code
+
+    Error Responses:
+        400: Missing team parameter - when team is not provided
+    """
     season = request.args.get("season")
     team = request.args.get("team")
     if team is None:
@@ -37,6 +81,27 @@ def get_transfer_out_data():
 @transfer_bp.route('/transfers/csv_file', methods=['GET'])
 @safe_file_cleanup
 def get_transfer_data_csv():
+    """Export transfer data to a CSV file.
+
+    This endpoint generates and returns a CSV file containing transfer data for a specific team.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        team (str, required): Team name or identifier
+        filename (str, required): Name for the exported file (without extension)
+        transfer_type (str, optional): Type of transfers to include:
+            - "in": Only incoming transfers
+            - "out": Only outgoing transfers
+            - "both": Both incoming and outgoing transfers (default)
+
+    Returns:
+        file: CSV file download response
+
+    Error Responses:
+        400: Missing team parameter - when team is not provided
+        400: Missing filename parameter - when filename is not provided
+        400: Invalid type parameter - when transfer_type is not "in", "out", or "both"
+    """
     g.temp_state = {}
     season = request.args.get("season")
     team = request.args.get("team")
@@ -65,9 +130,31 @@ def get_transfer_data_csv():
                          )
     return jsonify(response[0]), response[1]
 
+
 @transfer_bp.route('/transfers/json_file', methods=['GET'])
 @safe_file_cleanup
 def get_transfer_data_json():
+    """Export transfer data to a JSON file.
+
+    This endpoint generates and returns a JSON file containing transfer data for a specific team.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        team (str, required): Team name or identifier
+        filename (str, required): Name for the exported file (without extension)
+        transfer_type (str, optional): Type of transfers to include:
+            - "in": Only incoming transfers
+            - "out": Only outgoing transfers
+            - "both": Both incoming and outgoing transfers (default)
+
+    Returns:
+        file: JSON file download response
+
+    Error Responses:
+        400: Missing team parameter - when team is not provided
+        400: Missing filename parameter - when filename is not provided
+        400: Invalid type parameter - when transfer_type is not "in", "out", or "both"
+    """
     g.temp_state = {}
     season = request.args.get("season")
     team = request.args.get("team")

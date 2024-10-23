@@ -20,24 +20,6 @@ def get_standings():
         tuple: JSON response containing:
             - dict: League standings with detailed team statistics
             - int: HTTP status code
-
-    Example Response:
-        {
-            "standings": [
-                {
-                    "position": 1,
-                    "team": "Team Name",
-                    "played": 38,
-                    "won": 26,
-                    "drawn": 8,
-                    "lost": 4,
-                    "goals_for": 80,
-                    "goals_against": 30,
-                    "goal_difference": 50,
-                    "points": 86
-                }
-            ]
-        }, 200
     """
     season = request.args.get("season")
     header = request.args.get("header")
@@ -58,16 +40,6 @@ def get_standings_table():
         tuple: JSON response containing:
             - list: Array of team standings with basic statistics
             - int: HTTP status code
-
-    Example Response:
-        [
-            {
-                "position": 1,
-                "team": "Team Name",
-                "points": 86,
-                "goal_difference": 50
-            }
-        ], 200
     """
     season = request.args.get("season")
     response = RankingService().get_premier_league_ranking_list(season)
@@ -90,11 +62,6 @@ def get_standings_csv():
 
     Error Responses:
         400: Missing filename parameter - when filename is not provided
-
-    Notes:
-        - The CSV includes all team statistics including points, wins, draws, losses,
-          goals scored, goals conceded, and goal difference
-        - File is automatically cleaned up after download
     """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
@@ -134,11 +101,6 @@ def get_standings_json():
 
     Error Responses:
         400: Missing filename parameter - when filename is not provided
-
-    Notes:
-        - The JSON includes all team statistics including points, wins, draws, losses,
-          goals scored, goals conceded, and goal difference
-        - File is automatically cleaned up after download
     """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
@@ -179,12 +141,6 @@ def get_standings_pdf():
 
     Error Responses:
         400: Missing filename parameter - when filename is not provided
-
-    Notes:
-        - The PDF includes all team statistics in a professionally formatted table
-        - Includes team positions, points, and all match statistics
-        - File is automatically cleaned up after download
-        - Suitable for printing or digital distribution
     """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
