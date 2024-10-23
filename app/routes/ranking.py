@@ -8,6 +8,37 @@ ranking_bp = Blueprint('ranking', __name__)
 
 @ranking_bp.route('/ranking', methods=['GET'])
 def get_standings():
+    """Get the Premier League standings with detailed statistics.
+
+    This endpoint returns the current Premier League table with comprehensive team statistics.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        header (str, optional): Include additional metadata in response if provided
+
+    Returns:
+        tuple: JSON response containing:
+            - dict: League standings with detailed team statistics
+            - int: HTTP status code
+
+    Example Response:
+        {
+            "standings": [
+                {
+                    "position": 1,
+                    "team": "Team Name",
+                    "played": 38,
+                    "won": 26,
+                    "drawn": 8,
+                    "lost": 4,
+                    "goals_for": 80,
+                    "goals_against": 30,
+                    "goal_difference": 50,
+                    "points": 86
+                }
+            ]
+        }, 200
+    """
     season = request.args.get("season")
     header = request.args.get("header")
     response = RankingService().get_premier_league_ranking(season=season, header=header)
@@ -16,6 +47,28 @@ def get_standings():
 
 @ranking_bp.route('/ranking/table', methods=['GET'])
 def get_standings_table():
+    """Get a simplified Premier League standings table.
+
+    This endpoint returns a streamlined version of the league table focused on essential stats.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+
+    Returns:
+        tuple: JSON response containing:
+            - list: Array of team standings with basic statistics
+            - int: HTTP status code
+
+    Example Response:
+        [
+            {
+                "position": 1,
+                "team": "Team Name",
+                "points": 86,
+                "goal_difference": 50
+            }
+        ], 200
+    """
     season = request.args.get("season")
     response = RankingService().get_premier_league_ranking_list(season)
     return jsonify(response[0]), response[1]
@@ -24,6 +77,25 @@ def get_standings_table():
 @ranking_bp.route('/ranking/csv_file', methods=['GET'])
 @safe_file_cleanup
 def get_standings_csv():
+    """Export Premier League standings to a CSV file.
+
+    This endpoint generates and returns a CSV file containing the complete league table.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        filename (str, required): Name for the exported file (without extension)
+
+    Returns:
+        file: CSV file download response
+
+    Error Responses:
+        400: Missing filename parameter - when filename is not provided
+
+    Notes:
+        - The CSV includes all team statistics including points, wins, draws, losses,
+          goals scored, goals conceded, and goal difference
+        - File is automatically cleaned up after download
+    """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
     season = request.args.get("season")
@@ -49,6 +121,25 @@ def get_standings_csv():
 @ranking_bp.route('/ranking/json_file', methods=['GET'])
 @safe_file_cleanup
 def get_standings_json():
+    """Export Premier League standings to a JSON file.
+
+    This endpoint generates and returns a JSON file containing the complete league table.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        filename (str, required): Name for the exported file (without extension)
+
+    Returns:
+        file: JSON file download response
+
+    Error Responses:
+        400: Missing filename parameter - when filename is not provided
+
+    Notes:
+        - The JSON includes all team statistics including points, wins, draws, losses,
+          goals scored, goals conceded, and goal difference
+        - File is automatically cleaned up after download
+    """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
     season = request.args.get("season")
@@ -74,6 +165,27 @@ def get_standings_json():
 @ranking_bp.route('/ranking/pdf_file', methods=['GET'])
 @safe_file_cleanup
 def get_standings_pdf():
+    """Export Premier League standings to a PDF file.
+
+    This endpoint generates and returns a PDF file containing the complete league table
+    in a formatted, printable layout.
+
+    Query Parameters:
+        season (str, optional): Filter results by season (e.g., '2023-2024')
+        filename (str, required): Name for the exported file (without extension)
+
+    Returns:
+        file: PDF file download response
+
+    Error Responses:
+        400: Missing filename parameter - when filename is not provided
+
+    Notes:
+        - The PDF includes all team statistics in a professionally formatted table
+        - Includes team positions, points, and all match statistics
+        - File is automatically cleaned up after download
+        - Suitable for printing or digital distribution
+    """
     if not hasattr(g, 'temp_state'):
         g.temp_state = {}
     season = request.args.get("season")
@@ -94,4 +206,3 @@ def get_standings_pdf():
                          download_name=f'{file_name}.pdf'
                          )
     return response
-
