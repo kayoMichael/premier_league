@@ -47,6 +47,7 @@ def remove_qualification_relegation_and_css(data):
 
 
 def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, header: str = None, header_2: str = None):
+    os.makedirs("files", exist_ok=True)
     with open(f"files/{file_name}.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
         if header:
