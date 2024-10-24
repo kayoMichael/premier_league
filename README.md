@@ -377,7 +377,7 @@ Example Data Structure:
 - [📝 Examples](#-examples)
 
 ## 🔍 Overview
-[Back to top](#table-of-contents)
+[Back to top](#premier-league-data-tool)
 
 This API provides access to Premier League player statistics, including goals and assists data. It supports both direct data retrieval and file exports in CSV and JSON formats.
 
