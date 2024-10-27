@@ -11,16 +11,18 @@ There are several ways to utilize the package as an API via Flask, or AWS Lambda
 ### Locally
 ```
 pip install -r requirements.txt
+pip install -e .
 python app.py
 ```
 
-### Running with Docker
+### Running The Server with Docker
 ```commandline
 docker build -t premier-league-data-tool .
 docker run -p 5000:5000 premier-league-data-tool
 ```
 
 ## Deploying to AWS Lambda (Serverless Framework)
+Assuming A Valid AWS Account is Configured to the terminal.
 ```commandline
 cd lambda
 npm install -g serverless
