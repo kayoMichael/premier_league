@@ -1,10 +1,10 @@
 # Premier League Data Tool
 
-### This Python Package
+### Python Package
 premier_league Package scraps data from various sites to provide useful information about the Premier League.
 
 ## Deployments
-There are several ways to utilize the package as an API. Flask, or AWS Lambda. The configuration are in both the /app and /lambda directories. 
+There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda directories. 
 ## Running the Flask API
 
 
@@ -20,8 +20,9 @@ docker build -t premier-league-data-tool .
 docker run -p 5000:5000 premier-league-data-tool
 ```
 
-### Deploying to AWS Lambda (Serverless Framework)
+## Deploying to AWS Lambda (Serverless Framework)
 ```commandline
+cd lambda
 npm install -g serverless
 npm install -g serverless-python-requirements
 npx serverless deploy --aws-profile <aws_profile_name>
