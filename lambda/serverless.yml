@@ -28,22 +28,53 @@ functions:
           path: /transfers_in
           method: get
           cors: false
-          private: true
+          private: false
       - http:
           path: /transfers_out
           method: get
           cors: false
-          private: true
+          private: false
       - http:
           path: /transfers_csv
           method: put
           cors: false
-          private: true
+          private: false
       - http:
           path: /transfers_json
           method: get
           cors: false
-          private: true
+          private: false
+  PlayersPremierLeagueData:
+    handler: src/player_lambda.lambda_handler
+    environment:
+      S3_BUCKET_NAME: REPLACE_ME_BUCKET
+    runtime: python3.11
+    timeout: 30
+    memorySize: 1024
+    package:
+      exclude:
+        - ./app
+    events:
+      - http:
+          path: /player_ranking
+          method: get
+          cors: false
+          private: false
+      - http:
+          path: /player_csv
+          method: get
+          cors: false
+          private: false
+      - http:
+          path: /player_json
+          method: put
+          cors: false
+          private: false
+      - http:
+          path: /player_pdf
+          method: get
+          cors: false
+          private: false
 
 plugins:
   - serverless-python-requirements

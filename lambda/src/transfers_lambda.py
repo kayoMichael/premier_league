@@ -1,11 +1,9 @@
 from premier_league import Transfers
-import json
-from utils.methods import export_to_csv, export_to_json
+from utils.methods import export_to_csv, export_to_json, generate_http_response, save_to_s3
 import uuid
-import boto3
 import os
 
-s3 = boto3.client('s3')
+
 S3_NAME = os.getenv('S3_BUCKET_NAME')
 
 
@@ -34,8 +32,7 @@ class HandleLambdaRequest(Transfers):
                 export_to_csv(self.filename, self.transfer_in_table(self.target_team), header=f"{self.season} {self.target_team} Transfers In")
             elif self.export_type == "out":
                 export_to_csv(self.filename, self.transfer_out_table(self.target_team), header=f"{self.season} {self.target_team} Transfers Out")
-
-            return generate_http_response(self.save_to_s3(f"{self.filename}.csv"), 200)
+            return generate_http_response(save_to_s3(f"{self.filename}.csv", S3_NAME), 200)
         elif self.path == "/transfers_json":
             if self.filename is None:
                 return generate_http_response("Filename is required", 400)
@@ -50,22 +47,7 @@ class HandleLambdaRequest(Transfers):
             elif self.export_type == "out":
                 export_to_json(self.filename, self.transfer_out_table(self.target_team), header_1=f"{self.season} {self.target_team} Transfers Out")
 
-            return generate_http_response(self.save_to_s3(f"{self.filename}.json"), 200)
-
-    @staticmethod
-    def save_to_s3(file_name):
-        s3_directory = uuid.uuid4()
-        s3_file_path = f"{s3_directory}/{file_name}"
-        s3.upload_file(f"tmp/{file_name}", 'premier-league-transfers', s3_file_path)
-
-        return s3_file_path
-
-
-def generate_http_response(status_code, body):
-    return {
-        'statusCode': status_code,
-        'body': json.dumps(body)
-    }
+            return generate_http_response(save_to_s3(f"{self.filename}.json", S3_NAME), 200)
 
 
 def lambda_handler(event, _):

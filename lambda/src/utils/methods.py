@@ -1,5 +1,9 @@
 import csv
 import json
+import boto3
+import uuid
+
+s3 = boto3.client('s3')
 
 
 def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, header: str = None, header_2: str = None):
@@ -41,3 +45,22 @@ def export_to_json(file_name: str, data: list[list], data_2: list[list] = None, 
 
     with open(f'tmp/{file_name}.json', 'w') as json_file:
         json.dump(json_data, json_file, indent=4, ensure_ascii=False)
+
+
+def save_to_s3(file_name: str, bucket_name: str):
+    s3_directory = uuid.uuid4()
+    s3_file_path = f"{s3_directory}/{file_name}"
+    s3.upload_file(
+        Filename=f"tmp/{file_name}",
+        Bucket=bucket_name,
+        Key=s3_file_path
+    )
+
+    return s3_file_path
+
+
+def generate_http_response(status_code, body):
+    return {
+        'statusCode': status_code,
+        'body': json.dumps(body)
+    }

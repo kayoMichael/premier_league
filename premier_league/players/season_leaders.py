@@ -120,7 +120,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         """
         export_to_json(file_name, self.get_top_stats_list(limit), header_1=header)
 
-    def get_top_stats_pdf(self, file_name: str):
+    def get_top_stats_pdf(self, file_name: str, path: str):
         """
         Export the top 20 player statistics to a PDF file.
 
@@ -129,9 +129,10 @@ class PlayerSeasonLeaders(BaseScrapper):
 
         Args:
             file_name (str): The name of the file to save (without extension).
+            path (str): The path to save the PDF file
         """
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
-        pdf = canvas.Canvas(f"{file_name}.pdf", pagesize=A3)
+        pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
 
         # Set up the title
         pdf.setFont("Arial", 16)
