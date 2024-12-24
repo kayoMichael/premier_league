@@ -4,6 +4,21 @@ from functools import wraps
 
 
 def safe_file_cleanup(func):
+    """
+       A decorator that ensures temporary files are properly cleaned up after a Flask request,
+       whether the request succeeds or fails. The decorated function must store the file path
+       in g.temp_state['file_path'].
+
+       This decorator handles file cleanup in two scenarios:
+       1. After a successful request completion (using Flask's after_this_request)
+       2. Immediately if an exception occurs during request processing
+
+       Args:
+           func: The Flask route function to be decorated
+
+       Returns:
+           wrapper: The decorated function that includes file cleanup logic
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
         file_path = None

@@ -30,7 +30,7 @@ def get_scorers():
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
-    response = PlayerService().get_player_data_goals(season=season, limit=int(limit))
+    response = PlayerService().get_player_data_goals(season=season, limit=int(limit) if limit else None)
     return jsonify(response[0]), response[1]
 
 
@@ -57,7 +57,7 @@ def get_assists():
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
-    response = PlayerService().get_player_data_assists(season=season, limit=int(limit))
+    response = PlayerService().get_player_data_assists(season=season, limit=int(limit) if limit else None)
     return jsonify(response[0]), response[1]
 
 
@@ -142,7 +142,7 @@ def get_assists_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_assists_csv(safe_filename, season=season, header=header,
-                                                           limit=int(limit))
+                                                           limit=int(limit) if limit else None)
     g.temp_state['file_path'] = response[0]
 
     if response[1] == 200:
@@ -187,9 +187,11 @@ def get_scorers_json():
     elif file_name is None:
         return {"error": "Missing filename parameter"}, 400
 
+    limit = int(limit) if limit else None
+
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = PlayerService().get_player_data_goals_json(safe_filename, season=season, header=header, limit=int(limit))
+    response = PlayerService().get_player_data_goals_json(safe_filename, season=season, header=header, limit=limit)
     g.temp_state['file_path'] = response[0]
 
     if response[1] == 200:
@@ -237,7 +239,7 @@ def get_assists_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_assists_json(safe_filename, season=season, header=header,
-                                                            limit=int(limit))
+                                                            limit=int(limit) if limit else None)
     g.temp_state['file_path'] = response[0]
 
     if response[1] == 200:
