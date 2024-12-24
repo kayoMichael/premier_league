@@ -2,8 +2,10 @@ import csv
 import json
 import boto3
 import uuid
+import os
 
 s3 = boto3.client('s3')
+s3_name = os.getenv('S3_BUCKET_NAME')
 
 
 def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, header: str = None, header_2: str = None):
@@ -59,7 +61,19 @@ def save_to_s3(file_name: str, bucket_name: str):
     return s3_file_path
 
 
-def generate_http_response(status_code, body):
+def generate_http_response(status_code, file_path):
+    """
+    Generate an HTTP response with appropriate content type and body formatting.
+
+    Args:
+        status_code (int): HTTP status code for the response
+        file_path (str): file path
+
+    Returns:
+        dict: Formatted response dictionary
+    """
+    body = f"File saved to {s3_name} in directory {file_path}"
+
     return {
         'statusCode': status_code,
         'body': json.dumps(body)

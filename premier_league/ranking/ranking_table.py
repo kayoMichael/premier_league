@@ -91,7 +91,7 @@ class RankingTable(BaseScrapper):
         """
         return export_to_dict(self.ranking_list, header_1=header)
 
-    def get_prem_ranking_pdf(self, file_name: str) -> None:
+    def get_prem_ranking_pdf(self, file_name: str, dir="files") -> None:
         """
         Generate a PDF file containing the Premier League ranking table.
 
@@ -100,10 +100,11 @@ class RankingTable(BaseScrapper):
 
         Args:
             file_name (str): The name of the file to save the PDF to (without extension).
+            dir (str): The directory to save the PDF file to.
         """
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
         os.makedirs("files", exist_ok=True)
-        pdf = canvas.Canvas(f"files/{file_name}.pdf", pagesize=A3)
+        pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
         pdf.setFont("Arial", 16)
         title = f"Premier League Table {self.season}"

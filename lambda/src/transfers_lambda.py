@@ -21,9 +21,9 @@ class HandleLambdaRequest(Transfers):
             return self.transfer_out_table(self.target_team)
         elif self.path == "/transfers_csv":
             if self.filename is None:
-                return generate_http_response("Filename is required", 400)
+                return generate_http_response(400, "Filename is required")
             elif self.export_type not in ["in", "out", "both"]:
-                return generate_http_response("Export type is invalid or missing. It must be either in, out or both", 400)
+                return generate_http_response(400, "Export type is invalid or missing. It must be either in, out or both")
             if self.export_type == "both":
                 export_to_csv(self.filename, self.transfer_in_table(self.target_team), self.transfer_out_table(self.target_team),
                               f"{self.season} {self.target_team} Transfers In", "{self.season} {self.target_team} Transfers Out")
@@ -31,12 +31,12 @@ class HandleLambdaRequest(Transfers):
                 export_to_csv(self.filename, self.transfer_in_table(self.target_team), header=f"{self.season} {self.target_team} Transfers In")
             elif self.export_type == "out":
                 export_to_csv(self.filename, self.transfer_out_table(self.target_team), header=f"{self.season} {self.target_team} Transfers Out")
-            return generate_http_response(save_to_s3(f"{self.filename}.csv", S3_NAME), 200)
+            return generate_http_response(200, save_to_s3(f"{self.filename}.csv", S3_NAME), 'csv')
         elif self.path == "/transfers_json":
             if self.filename is None:
-                return generate_http_response("Filename is required", 400)
+                return generate_http_response(400, "Filename is required")
             elif self.export_type not in ["in", "out", "both"]:
-                return generate_http_response("Export type is invalid or missing. It must be either in, out or both", 400)
+                return generate_http_response(400, "Export type is invalid or missing. It must be either in, out or both")
 
             if self.export_type == "both":
                 export_to_json(self.filename, self.transfer_in_table(self.target_team), self.transfer_out_table(self.target_team),
@@ -46,7 +46,7 @@ class HandleLambdaRequest(Transfers):
             elif self.export_type == "out":
                 export_to_json(self.filename, self.transfer_out_table(self.target_team), header_1=f"{self.season} {self.target_team} Transfers Out")
 
-            return generate_http_response(save_to_s3(f"{self.filename}.json", S3_NAME), 200)
+            return generate_http_response(200, save_to_s3(f"{self.filename}.json", S3_NAME))
 
 
 def lambda_handler(event, _):
@@ -56,11 +56,11 @@ def lambda_handler(event, _):
     export_type = event['queryStringParameters'].get('export_type')
 
     if team is None:
-        return generate_http_response("Team is required", 400)
+        return generate_http_response(400, "Team is required")
 
     try:
         response = HandleLambdaRequest(event['path'], team, season, filename, export_type).handle_request()
     except Exception as e:
-        return generate_http_response(str(e), 400)
+        return generate_http_response(400, str(e))
 
     return response

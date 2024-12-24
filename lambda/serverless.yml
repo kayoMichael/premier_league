@@ -10,13 +10,13 @@ provider:
       Action:
         - s3:PutObject
         - s3:GetObject
+  environment:
+    S3_BUCKET_NAME: REPLACE_ME_BUCKET
 
 
 functions:
   TransferPremierLeagueData:
     handler: src/transfers_lambda.lambda_handler
-    environment:
-      S3_BUCKET_NAME: REPLACE_ME_BUCKET
     runtime: python3.11
     timeout: 30
     memorySize: 1024
@@ -46,8 +46,6 @@ functions:
           private: false
   PlayersPremierLeagueData:
     handler: src/player_lambda.lambda_handler
-    environment:
-      S3_BUCKET_NAME: REPLACE_ME_BUCKET
     runtime: python3.11
     timeout: 30
     memorySize: 1024
@@ -72,6 +70,35 @@ functions:
           private: false
       - http:
           path: /player_pdf
+          method: get
+          cors: false
+          private: false
+  RankingPremierLeagueData:
+    handler: src/ranking_lambda.lambda_handler
+    runtime: python3.11
+    timeout: 30
+    memorySize: 1024
+    package:
+      exclude:
+        - ./app
+    events:
+      - http:
+          path: /ranking
+          method: get
+          cors: false
+          private: false
+      - http:
+          path: /ranking_csv
+          method: get
+          cors: false
+          private: false
+      - http:
+          path: /ranking_json
+          method: put
+          cors: false
+          private: false
+      - http:
+          path: /ranking_pdf
           method: get
           cors: false
           private: false
