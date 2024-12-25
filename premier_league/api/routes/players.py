@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request, send_file, g
-from app.services.player_service import PlayerService
+from premier_league.api.services.player_service import PlayerService
 from werkzeug.utils import secure_filename
 
-from app.utils.decorator import safe_file_cleanup
+from premier_league.api.utils.decorator import safe_file_cleanup
 
 players_bp = Blueprint('players', __name__)
 

@@ -22,7 +22,7 @@ functions:
     memorySize: 1024
     package:
       exclude:
-        - ./app
+        - ./api
     events:
       - http:
           path: /transfers_in
@@ -51,7 +51,7 @@ functions:
     memorySize: 1024
     package:
       exclude:
-        - ./app
+        - ./api
     events:
       - http:
           path: /player_ranking
@@ -80,7 +80,7 @@ functions:
     memorySize: 1024
     package:
       exclude:
-        - ./app
+        - ./api
     events:
       - http:
           path: /ranking

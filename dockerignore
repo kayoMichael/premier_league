@@ -1,8 +1,0 @@
-__pycache__
-*.pyc
-.git
-.env
-**.json
-**.csv
-**.pdf
-lambda

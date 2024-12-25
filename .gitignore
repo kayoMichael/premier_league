@@ -3,3 +3,7 @@
 **.pdf
 **.json
 **.csv
+**/files
+*.egg-info/
+dist/
+.DS_Store

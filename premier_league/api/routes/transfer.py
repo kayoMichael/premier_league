@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file, g
-from app.services.transfer_service import TransferService
+from premier_league.api.services.transfer_service import TransferService
 from werkzeug.utils import secure_filename
-from app.utils.decorator import safe_file_cleanup
+from premier_league.api.utils.decorator import safe_file_cleanup
 from typing import Literal
 
 transfer_bp = Blueprint('transfers', __name__)

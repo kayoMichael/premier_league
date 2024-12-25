@@ -1,4 +1,4 @@
-from premier_league.ranking.ranking_table import RankingTable
+from premier_league import RankingTable
 import os
 
 
