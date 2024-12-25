@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="premier_league",
-    version="0.1",
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     author="Michael Li",
     description="Premier League data Scrapping package",
     packages=find_packages(exclude=['test*', 'build*', 'dist*', 'files*', 'venv*']),
@@ -17,7 +18,7 @@ setup(
         'flask-cors==5.0.0',
         'flask-limiter==1.4.0',
         'PyYAML==6.0.2',
-        'gunicorn==23.0.0',
+        'gunicorn==23.0.0'
     ],
     python_requires='>=3.11',
 )
