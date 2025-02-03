@@ -1,5 +1,12 @@
 from http.client import HTTPException
 from xml.etree import ElementTree
+import hashlib
+import asyncio
+import aiohttp
+from functools import partial
+from tqdm import tqdm
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 from datetime import datetime
 import requests
@@ -22,11 +29,14 @@ class BaseScrapper:
     and extracting data using XPath queries.
 
     Attributes:
-        url (str): The URL to scrape.
+        url (str): The URL to scrape. The URL can contain placeholders for the season.
         page (ElementTree): The parsed XML representation of the web page.
+        season (str): The processed season for scraping data.
+        target_season (str): The target season (parameter) for scraping data.
     """
 
     url: str
+    requires_season: bool = True
     page: ElementTree = field(default_factory=lambda: None, init=False)
     season: str = field(default=None, init=False)
     target_season: str = field(default=None)
@@ -38,21 +48,36 @@ class BaseScrapper:
         Raises:
             ValueError: If the target_season is invalid or in an incorrect format.
         """
+        if self.requires_season:
+            return
+
         current_date = datetime.now()
         if not self.target_season:
             current_year = current_date.year
             current_month = current_date.month
             if current_month >= 8:
-                self.season = f"{current_year}-{str(current_year + 1)[2:]}" if self.url[-1] != "/" else f"{current_year}-{str(current_year + 1)}"
+                self.season = (
+                    f"{current_year}-{str(current_year + 1)[2:]}"
+                    if self.url[-1] != "/"
+                    else f"{current_year}-{str(current_year + 1)}"
+                )
             else:
-                self.season = f"{current_year - 1}-{str(current_year)[2:]}" if self.url[-1] != "/" else f"{current_year - 1}-{str(current_year)}"
+                self.season = (
+                    f"{current_year - 1}-{str(current_year)[2:]}"
+                    if self.url[-1] != "/"
+                    else f"{current_year - 1}-{str(current_year)}"
+                )
         else:
-            if not re.match(r'^\d{4}-\d{4}$', self.target_season):
-                raise ValueError("Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen.")
+            if not re.match(r"^\d{4}-\d{4}$", self.target_season):
+                raise ValueError(
+                    "Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen."
+                )
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
-                raise ValueError("Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992.")
+                raise ValueError(
+                    "Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992."
+                )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
             self.season = self.target_season
@@ -133,7 +158,9 @@ class BaseScrapper:
         bsoup: BeautifulSoup = self.parse_to_html()
         return self.convert_to_xml(bsoup=bsoup)
 
-    def get_list_by_xpath(self, xpath: str, clean: Optional[bool] = True) -> Optional[list]:
+    def get_list_by_xpath(
+        self, xpath: str, clean: Optional[bool] = True
+    ) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
 
@@ -146,19 +173,21 @@ class BaseScrapper:
         """
         elements: list = self.page.xpath(xpath)
         if clean:
-            elements_valid: list = [clean_xml_text(e) for e in elements if clean_xml_text(e)]
+            elements_valid: list = [
+                clean_xml_text(e) for e in elements if clean_xml_text(e)
+            ]
         else:
             elements_valid: list = [e for e in elements]
         return elements_valid or []
 
     def get_text_by_xpath(
-            self,
-            xpath: str,
-            pos: int = 0,
-            index: Optional[int] = None,
-            index_from: Optional[int] = None,
-            index_to: Optional[int] = None,
-            join_str: Optional[str] = None,
+        self,
+        xpath: str,
+        pos: int = 0,
+        index: Optional[int] = None,
+        index_from: Optional[int] = None,
+        index_to: Optional[int] = None,
+        join_str: Optional[str] = None,
     ) -> Optional[str]:
         """
         Get text content from elements matching the given XPath.
@@ -203,3 +232,117 @@ class BaseScrapper:
             return clean_xml_text(element[pos])
         except IndexError:
             return None
+
+
+class BaseDataSetScrapper:
+    """
+    A class for scraping, managing and caching large amounts of data from a given list of URLs. It uses a flatfile
+    caching approach for permanent caching of data to prevent data loss when rate limited or throttled.
+
+    This class provides methods for retrieving, processing, and exporting data sets
+    from a specified URL. It inherits from the BaseScrapper class.
+
+    Attributes:
+        url (list): The List of URL to scrape.
+        page (ElementTree): The parsed XML representation of the web page.
+    """
+
+    def __init__(self, cache_dir="cache"):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(exist_ok=True)
+        self.pages = []
+
+    def get_cache_path(self, url):
+        filename = hashlib.md5(url.encode()).hexdigest()
+        return self.cache_dir / f"{filename}.txt"
+
+    async def fetch_page(self, session, url, pbar, rate_limit):
+        cache_path = self.get_cache_path(url)
+        if cache_path.exists():
+            pbar.update(1)
+            return etree.HTML(cache_path.read_text(encoding="utf-8"))
+
+        try:
+            await asyncio.sleep(rate_limit)
+            async with session.get(
+                url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/122.0.0.0 "
+                        "Safari/537.36"
+                    ),
+                },
+            ) as response:
+                html = await response.text()
+                cache_path.write_text(html, encoding="utf-8")
+
+                pbar.update(1)
+                return etree.HTML(html)
+
+        except Exception as e:
+            print(f"Error fetching {url}: {e}")
+            return None
+
+    def scrape_all(self, urls, max_concurrent=15, rate_limit=1):
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.run_until_complete(
+                self._scrape_all(urls, max_concurrent, rate_limit)
+            )
+        except RuntimeError:
+            return asyncio.run(self._scrape_all(urls, max_concurrent, rate_limit))
+
+    async def _scrape_all(self, urls, max_concurrent, rate_limit):
+        async with aiohttp.ClientSession() as session:
+            with tqdm(total=len(urls), desc="Scraping Progress") as pbar:
+                semaphore = asyncio.Semaphore(max_concurrent)
+
+                async def bounded_fetch(url):
+                    async with semaphore:
+                        return await self.fetch_page(session, url, pbar, rate_limit)
+
+                tasks = [bounded_fetch(url) for url in urls]
+                results = await asyncio.gather(*tasks)
+
+                return [r for r in results if r is not None]
+
+    def _get_list_by_xpath(
+        self, page: ElementTree, xpath: str, clean: Optional[bool] = True
+    ) -> Optional[list]:
+        """
+        Get a list of elements matching the given XPath.
+
+        Args:
+            xpath (str): The XPath query to execute.
+            clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+
+        Returns:
+            Optional[list]: A list of matching elements, or an empty list if no matches are found.
+        """
+        elements: list = page.xpath(xpath)
+        if clean:
+            elements_valid: list = [
+                clean_xml_text(e) for e in elements if clean_xml_text(e)
+            ]
+        else:
+            elements_valid: list = [e for e in elements]
+        return elements_valid or []
+
+    def process_xpath(self, xpath: str, clean: Optional[bool] = True) -> Optional[list]:
+        """
+        Get a list of elements matching the given XPath using a ThreadPoolExecutor.
+
+        Args:
+            xpath (str): The XPath query to execute.
+            clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+
+        Returns:
+            Optional[list]: A list of matching elements, or an empty list if no matches are found.
+        """
+        with ThreadPoolExecutor() as executor:
+            func = partial(self._get_list_by_xpath, xpath=xpath, clean=clean)
+            results = list(executor.map(func, self.pages))
+
+        return [item for sublist in results for item in sublist]

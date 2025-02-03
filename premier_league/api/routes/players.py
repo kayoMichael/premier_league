@@ -4,10 +4,10 @@ from werkzeug.utils import secure_filename
 
 from premier_league.api.utils.decorator import safe_file_cleanup
 
-players_bp = Blueprint('players', __name__)
+players_bp = Blueprint("players", __name__)
 
 
-@players_bp.route('/players/goals', methods=['GET'])
+@players_bp.route("/players/goals", methods=["GET"])
 def get_scorers():
     """Get a list of top goalscorers.
 
@@ -30,11 +30,13 @@ def get_scorers():
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
-    response = PlayerService().get_player_data_goals(season=season, limit=int(limit) if limit else None)
+    response = PlayerService().get_player_data_goals(
+        season=season, limit=int(limit) if limit else None
+    )
     return jsonify(response[0]), response[1]
 
 
-@players_bp.route('/players/assists', methods=['GET'])
+@players_bp.route("/players/assists", methods=["GET"])
 def get_assists():
     """Get a list of top assist providers.
 
@@ -57,11 +59,13 @@ def get_assists():
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
-    response = PlayerService().get_player_data_assists(season=season, limit=int(limit) if limit else None)
+    response = PlayerService().get_player_data_assists(
+        season=season, limit=int(limit) if limit else None
+    )
     return jsonify(response[0]), response[1]
 
 
-@players_bp.route('/players/goals/csv_file', methods=['GET'])
+@players_bp.route("/players/goals/csv_file", methods=["GET"])
 @safe_file_cleanup
 def get_scorers_csv():
     """Export top goalscorers data to a CSV file.
@@ -94,21 +98,24 @@ def get_scorers_csv():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = PlayerService().get_player_data_goals_csv(safe_filename, season=season, header=header, limit=int(limit))
-    g.temp_state['file_path'] = response[0]
+    response = PlayerService().get_player_data_goals_csv(
+        safe_filename, season=season, header=header, limit=int(limit)
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='text/csv',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.csv'
-                         )
+        return send_file(
+            file_path,
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name=f"{safe_filename}.csv",
+        )
 
     return jsonify(response[0]), response[1]
 
 
-@players_bp.route('/players/assists/csv_file', methods=['GET'])
+@players_bp.route("/players/assists/csv_file", methods=["GET"])
 @safe_file_cleanup
 def get_assists_csv():
     """Export top assist providers data to a CSV file.
@@ -141,22 +148,24 @@ def get_assists_csv():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = PlayerService().get_player_data_assists_csv(safe_filename, season=season, header=header,
-                                                           limit=int(limit) if limit else None)
-    g.temp_state['file_path'] = response[0]
+    response = PlayerService().get_player_data_assists_csv(
+        safe_filename, season=season, header=header, limit=int(limit) if limit else None
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='text/csv',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.csv'
-                         )
+        return send_file(
+            file_path,
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name=f"{safe_filename}.csv",
+        )
 
     return jsonify(response[0]), response[1]
 
 
-@players_bp.route('/players/goals/json_file', methods=['GET'])
+@players_bp.route("/players/goals/json_file", methods=["GET"])
 @safe_file_cleanup
 def get_scorers_json():
     """Export top goalscorers data to a JSON file.
@@ -191,21 +200,24 @@ def get_scorers_json():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = PlayerService().get_player_data_goals_json(safe_filename, season=season, header=header, limit=limit)
-    g.temp_state['file_path'] = response[0]
+    response = PlayerService().get_player_data_goals_json(
+        safe_filename, season=season, header=header, limit=limit
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='application/json',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.json'
-                         )
+        return send_file(
+            file_path,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=f"{safe_filename}.json",
+        )
 
     return jsonify(response[0]), response[1]
 
 
-@players_bp.route('/players/assists/json_file', methods=['GET'])
+@players_bp.route("/players/assists/json_file", methods=["GET"])
 @safe_file_cleanup
 def get_assists_json():
     """Export top assist providers data to a JSON file.
@@ -238,16 +250,18 @@ def get_assists_json():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = PlayerService().get_player_data_assists_json(safe_filename, season=season, header=header,
-                                                            limit=int(limit) if limit else None)
-    g.temp_state['file_path'] = response[0]
+    response = PlayerService().get_player_data_assists_json(
+        safe_filename, season=season, header=header, limit=int(limit) if limit else None
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='application/json',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.json'
-                         )
+        return send_file(
+            file_path,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=f"{safe_filename}.json",
+        )
 
     return jsonify(response[0]), response[1]

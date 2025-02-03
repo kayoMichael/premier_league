@@ -44,7 +44,10 @@ class Transfers(BaseScrapper):
         Args:
             target_season (str, optional): The target season for transfer data. Defaults to None.
         """
-        super().__init__("https://www.worldfootball.net/transfers/eng-premier-league-{SEASON}/", target_season)
+        super().__init__(
+            "https://www.worldfootball.net/transfers/eng-premier-league-{SEASON}/",
+            target_season,
+        )
         self.page = self.request_url_page()
         self._season_top_players = self._init_transfers_table()
 
@@ -61,31 +64,39 @@ class Transfers(BaseScrapper):
         for transfer in transfer_list:
             try:
                 target_team = transfer.xpath(PLAYERS.TRANSFER_HEADER)[0]
-                player_transfers = [clean_xml_text(e) for e in
-                                    transfer.xpath(PLAYERS.TRANSFER_DATA) if clean_xml_text(e)]
-                team_transfer_dict[target_team.split(" » ")[0].strip().lower()] = player_transfers
+                player_transfers = [
+                    clean_xml_text(e)
+                    for e in transfer.xpath(PLAYERS.TRANSFER_DATA)
+                    if clean_xml_text(e)
+                ]
+                team_transfer_dict[target_team.split(" » ")[0].strip().lower()] = (
+                    player_transfers
+                )
             except IndexError:
                 break
 
         cleaned_transfer_data = {}
         for team, transfers in team_transfer_dict.items():
             index = 1
-            current_type = 'In'
-            cleaned_transfer_data[team] = [[["Date", "Name", "Position", "Club"]], [["Date", "Name", "Position", "Club"]]]
+            current_type = "In"
+            cleaned_transfer_data[team] = [
+                [["Date", "Name", "Position", "Club"]],
+                [["Date", "Name", "Position", "Club"]],
+            ]
             while index <= len(transfers[1:]):
                 partition = []
-                if bool(re.match(r'^\d{2}/\d{2}$', transfers[index])):
+                if bool(re.match(r"^\d{2}/\d{2}$", transfers[index])):
                     partition.append(transfers[index])
                     index += 1
                     try:
-                        while not bool(re.match(r'^\d{2}/\d{2}$', transfers[index])):
+                        while not bool(re.match(r"^\d{2}/\d{2}$", transfers[index])):
                             partition.append(transfers[index])
                             index += 1
                     except IndexError:
                         pass
 
                     if "Out" in partition:
-                        current_type = 'Out'
+                        current_type = "Out"
                         partition.remove("Out")
                     if len(partition) == 5:
                         partition[3] = f"{partition[3]}{partition[4]}"
@@ -162,7 +173,12 @@ class Transfers(BaseScrapper):
         except KeyError:
             raise TeamNotFoundError(team, self.season)
 
-    def transfer_csv(self, team: str, file_name: str, transfer_type: Literal["in", "out", "both"] = "both"):
+    def transfer_csv(
+        self,
+        team: str,
+        file_name: str,
+        transfer_type: Literal["in", "out", "both"] = "both",
+    ):
         """
         Export transfer data to a CSV file.
 
@@ -175,13 +191,32 @@ class Transfers(BaseScrapper):
             TeamNotFoundError: If the specified team is not found in the current season.
         """
         if transfer_type == "both":
-            export_to_csv(file_name,  self.transfer_in_table(team), self.transfer_out_table(team), f"{team} {self.season} Transfers In", f"{team} {self.season} Transfers Out")
+            export_to_csv(
+                file_name,
+                self.transfer_in_table(team),
+                self.transfer_out_table(team),
+                f"{team} {self.season} Transfers In",
+                f"{team} {self.season} Transfers Out",
+            )
         elif transfer_type == "in":
-            export_to_csv(file_name,  self.transfer_in_table(team), header=f"{team} {self.season} Transfers In")
+            export_to_csv(
+                file_name,
+                self.transfer_in_table(team),
+                header=f"{team} {self.season} Transfers In",
+            )
         else:
-            export_to_csv(file_name,  self.transfer_out_table(team), header=f"{team} {self.season} Transfers Out")
+            export_to_csv(
+                file_name,
+                self.transfer_out_table(team),
+                header=f"{team} {self.season} Transfers Out",
+            )
 
-    def transfer_json(self, team: str, file_name: str, transfer_type: Literal["in", "out", "both"] = "both"):
+    def transfer_json(
+        self,
+        team: str,
+        file_name: str,
+        transfer_type: Literal["in", "out", "both"] = "both",
+    ):
         """
         Export transfer data to a JSON file.
 
@@ -194,11 +229,17 @@ class Transfers(BaseScrapper):
             TeamNotFoundError: If the specified team is not found in the current season.
         """
         if transfer_type == "both":
-            export_to_json(file_name,  self.transfer_in_table(team), self.transfer_out_table(team), f"{team} {self.season} Transfers In", f"{team} {self.season} Transfers Out")
+            export_to_json(
+                file_name,
+                self.transfer_in_table(team),
+                self.transfer_out_table(team),
+                f"{team} {self.season} Transfers In",
+                f"{team} {self.season} Transfers Out",
+            )
         elif transfer_type == "in":
-            export_to_json(file_name,  self.transfer_in_table(team))
+            export_to_json(file_name, self.transfer_in_table(team))
         else:
-            export_to_json(file_name,  self.transfer_out_table(team))
+            export_to_json(file_name, self.transfer_out_table(team))
 
     def get_all_current_teams(self) -> list[str]:
         """

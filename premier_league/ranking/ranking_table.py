@@ -9,7 +9,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-from ..utils.methods import remove_qualification_relegation_and_css, export_to_csv, export_to_json, export_to_dict
+from ..utils.methods import (
+    remove_qualification_relegation_and_css,
+    export_to_csv,
+    export_to_json,
+    export_to_dict,
+)
 from ..utils.xpath import RANKING
 
 
@@ -35,7 +40,10 @@ class RankingTable(BaseScrapper):
             target_season (str, optional): The specific season to scrape data for.
                                            If not provided, the current season is used.
         """
-        super().__init__("https://en.wikipedia.org/wiki/{SEASON}_Premier_League", target_season=target_season)
+        super().__init__(
+            "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
+            target_season=target_season,
+        )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
 
@@ -46,8 +54,12 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
-        ranking_rows = remove_qualification_relegation_and_css(self.get_list_by_xpath(RANKING.CURRENT_RANKING))
-        ranking_list = [ranking_rows[i: i + 10] for i in range(0, len(ranking_rows), 10)]
+        ranking_rows = remove_qualification_relegation_and_css(
+            self.get_list_by_xpath(RANKING.CURRENT_RANKING)
+        )
+        ranking_list = [
+            ranking_rows[i : i + 10] for i in range(0, len(ranking_rows), 10)
+        ]
         return ranking_list
 
     def get_prem_ranking_list(self) -> list:
@@ -102,7 +114,7 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the PDF to (without extension).
             dir (str): The directory to save the PDF file to.
         """
-        pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+        pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
         os.makedirs("files", exist_ok=True)
         pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
@@ -126,28 +138,34 @@ class RankingTable(BaseScrapper):
         if self.season == "1994-95":
             relegation = -4
 
-        static_table_styles = [('BACKGROUND', (0, 0), (-1, 0), HexColor("#cccccc")),
-                               ('BACKGROUND', (0, 1), (-1, 4), HexColor("#aaff88")),
-                               ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-                               ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                               ('FONTNAME', (0, 0), (-1, -1), 'Arial'),
-                               ('FONTSIZE', (0, 0), (-1, -1), 12),
-                               ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                               ('TOPPADDING', (0, 0), (-1, -1), 12),
-                               ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                               ('BACKGROUND', (0, relegation), (-1, -1), HexColor("#e06666"))]
+        static_table_styles = [
+            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
+            ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+            ("FONTSIZE", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ("BACKGROUND", (0, relegation), (-1, -1), HexColor("#e06666")),
+        ]
 
         all_styles = static_table_styles + european_spots
         table.setStyle(TableStyle(all_styles))
         table.wrapOn(pdf, 0, 0)
-        table_width, table_height = table.wrapOn(pdf, A3[0] - 2 * inch, A3[1] - 2 * inch)
+        table_width, table_height = table.wrapOn(
+            pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
+        )
         x = (A3[0] - table_width) / 2
         y = A3[1] - table_height - 1 * inch
         table.drawOn(pdf, x, y)
 
         pdf.save()
 
-    def _find_european_qualification_spot(self) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
+    def _find_european_qualification_spot(
+        self,
+    ) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
         """
         Determine the European qualification spots for the current season.
 
@@ -160,7 +178,9 @@ class RankingTable(BaseScrapper):
         m_conference = None
         m_europa = []
         m_champions = []
-        all_current_teams = [self.ranking_list[index][1] for index in range(1, len(self.ranking_list))]
+        all_current_teams = [
+            self.ranking_list[index][1] for index in range(1, len(self.ranking_list))
+        ]
         if self.target_season is not None:
             domestic_and_european_winners = self._find_european_competition_spot()
             for index, team in enumerate(all_current_teams, start=1):
@@ -187,20 +207,37 @@ class RankingTable(BaseScrapper):
         # Determine if Europa League Qualifying Team already qualified to a higher Tournament (Champions League)
         for index in m_europa:
             if all_current_teams[index] not in cl_european_spots:
-                uel_style.append(('BACKGROUND', (0, index), (-1, index), HexColor("#99cc00")))
+                uel_style.append(
+                    ("BACKGROUND", (0, index), (-1, index), HexColor("#99cc00"))
+                )
                 europa_counter -= 1
 
         # Determine if Team already qualified to Champions League by League Position.
         for index in m_champions:
             if all_current_teams[index] not in cl_european_spots:
-                cl_style.append(('BACKGROUND', (0, index), (-1, index), HexColor("#aaff88")))
+                cl_style.append(
+                    ("BACKGROUND", (0, index), (-1, index), HexColor("#aaff88"))
+                )
 
         # Determine if Conference League Qualifying Team already qualified to a higher Tournament
         if m_conference is not None:
-            champions_matches = self._is_team_in_european_competition(m_conference, m_champions, all_current_teams)
-            europa_matches = self._is_team_in_european_competition(m_conference, m_europa, all_current_teams)
-            if not champions_matches and not europa_matches and all_current_teams[m_conference] not in cl_european_spots:
-                uecl_style = ('BACKGROUND', (0, m_conference), (-1, m_conference), HexColor("#6aa84f"))
+            champions_matches = self._is_team_in_european_competition(
+                m_conference, m_champions, all_current_teams
+            )
+            europa_matches = self._is_team_in_european_competition(
+                m_conference, m_europa, all_current_teams
+            )
+            if (
+                not champions_matches
+                and not europa_matches
+                and all_current_teams[m_conference] not in cl_european_spots
+            ):
+                uecl_style = (
+                    "BACKGROUND",
+                    (0, m_conference),
+                    (-1, m_conference),
+                    HexColor("#6aa84f"),
+                )
                 conference_counter -= 1
 
         # Determine if sixth place will receive Europa, Champions League or Europa Conference League spot
@@ -211,12 +248,14 @@ class RankingTable(BaseScrapper):
             if index in m_europa:
                 index += 1
             else:
-                uel_style.append(('BACKGROUND', (0, index), (-1, index), HexColor("#99cc00")))
+                uel_style.append(
+                    ("BACKGROUND", (0, index), (-1, index), HexColor("#99cc00"))
+                )
                 europa_counter -= 1
                 index += 1
 
         if conference_counter == 1:
-            uecl_style = ('BACKGROUND', (0, index), (-1, index), HexColor("#6aa84f"))
+            uecl_style = ("BACKGROUND", (0, index), (-1, index), HexColor("#6aa84f"))
         return [uecl_style] + uel_style + cl_style
 
     def _find_european_competition_spot(self) -> dict:
@@ -230,30 +269,44 @@ class RankingTable(BaseScrapper):
             dict: A dictionary containing the winners of each competition.
         """
         # FA Cup Winner for this Season (Potential Europa League Spot)
-        fa_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_FA_Cup")
+        fa_cup_page = self.additional_scrapper(
+            f"https://en.wikipedia.org/wiki/{self.season}_FA_Cup"
+        )
         fa_winner = self._find_tournament_winner(fa_cup_page, RANKING.CUP_WINNER)
 
         # EFL Cup Winner for this Season (Potential Europa Conference League Spot)
-        efl_cup_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_EFL_Cup")
+        efl_cup_page = self.additional_scrapper(
+            f"https://en.wikipedia.org/wiki/{self.season}_EFL_Cup"
+        )
         efl_winner = self._find_tournament_winner(efl_cup_page, RANKING.CUP_WINNER)
 
         # Previous Champions League Winner (Potential Champions League Spot)
-        cl_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Champions_League")
+        cl_page = self.additional_scrapper(
+            f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Champions_League"
+        )
         cl_winner = self._find_tournament_winner(cl_page, RANKING.UEFA_WINNER)
 
         # Europa League Winner (Potential Champions League Spot)
-        europa_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_League")
+        europa_page = self.additional_scrapper(
+            f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_League"
+        )
         europa_winner = self._find_tournament_winner(europa_page, RANKING.UEFA_WINNER)
 
         # Europa Conference League Winner (Potential Europa League Spot)
-        conference_page = self.additional_scrapper(f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_Conference_League")
-        conference_winner = self._find_tournament_winner(conference_page, RANKING.UEFA_WINNER)
+        conference_page = self.additional_scrapper(
+            f"https://en.wikipedia.org/wiki/{self.season}_UEFA_Europa_Conference_League"
+        )
+        conference_winner = self._find_tournament_winner(
+            conference_page, RANKING.UEFA_WINNER
+        )
 
-        return {"EFL": efl_winner,
-                "FA": fa_winner,
-                "CL": cl_winner,
-                "UEL": europa_winner,
-                "UECL": conference_winner}
+        return {
+            "EFL": efl_winner,
+            "FA": fa_winner,
+            "CL": cl_winner,
+            "UEL": europa_winner,
+            "UECL": conference_winner,
+        }
 
     def _scrap_european_qualification_spot(self) -> list:
         """
@@ -266,9 +319,18 @@ class RankingTable(BaseScrapper):
         """
         possible_european_spot = []
         if int(self.season[:4]) == 1997:
-            possible_european_spot = ["UEFA Cup", "Cup Winners' Cup", "Champions League", "UEFA Intertoto Cup"]
+            possible_european_spot = [
+                "UEFA Cup",
+                "Cup Winners' Cup",
+                "Champions League",
+                "UEFA Intertoto Cup",
+            ]
         elif int(self.season[:4]) < 1997:
-            possible_european_spot = ["UEFA Cup", "Cup Winners' Cup", "Champions League"]
+            possible_european_spot = [
+                "UEFA Cup",
+                "Cup Winners' Cup",
+                "Champions League",
+            ]
         elif int(self.season[:4]) <= 2007:
             possible_european_spot = ["UEFA Cup", "Intertoto Cup", "Champions League"]
         elif int(self.season[:4]) <= 2021:
@@ -277,22 +339,33 @@ class RankingTable(BaseScrapper):
         qualified = {}
         for tournament in possible_european_spot:
             qualified_teams = []
-            xpath = f"//tr[.//th/a[contains(text(), \"{tournament}\")]]/td//text()"
+            xpath = f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()'
             teams = self.get_list_by_xpath(xpath)
             for item in teams:
                 if "(" in item or ")" in item or "Fair Play" in item:
                     continue
-                elif re.search(r'F\.C\.', item, flags=re.IGNORECASE):
-                    qualified_teams.append(re.sub(r'\s*F\.C\.\s*', ' ', item, flags=re.IGNORECASE).strip())
+                elif re.search(r"F\.C\.", item, flags=re.IGNORECASE):
+                    qualified_teams.append(
+                        re.sub(r"\s*F\.C\.\s*", " ", item, flags=re.IGNORECASE).strip()
+                    )
                 else:
                     qualified_teams.append(item)
             qualified[tournament] = qualified_teams
         style = []
-        colors = [HexColor("#aaff88"), HexColor("#99cc00"), HexColor("#6aa84f"), HexColor("#e06666")]
+        colors = [
+            HexColor("#aaff88"),
+            HexColor("#99cc00"),
+            HexColor("#6aa84f"),
+            HexColor("#e06666"),
+        ]
         for index, tournament in enumerate(qualified.keys()):
             for team in qualified[tournament]:
-                team_index = self.ranking_list.index([i for i in self.ranking_list if team in i][0])
-                style.append(('BACKGROUND', (0, team_index), (-1, team_index), colors[index]))
+                team_index = self.ranking_list.index(
+                    [i for i in self.ranking_list if team in i][0]
+                )
+                style.append(
+                    ("BACKGROUND", (0, team_index), (-1, team_index), colors[index])
+                )
         return style
 
     @staticmethod

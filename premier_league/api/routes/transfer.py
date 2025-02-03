@@ -4,10 +4,10 @@ from werkzeug.utils import secure_filename
 from premier_league.api.utils.decorator import safe_file_cleanup
 from typing import Literal
 
-transfer_bp = Blueprint('transfers', __name__)
+transfer_bp = Blueprint("transfers", __name__)
 
 
-@transfer_bp.route('/all_teams', methods=['GET'])
+@transfer_bp.route("/all_teams", methods=["GET"])
 def get_all_teams():
     """Get a list of all Premier League teams.
 
@@ -26,7 +26,7 @@ def get_all_teams():
     return jsonify(response[0]), response[1]
 
 
-@transfer_bp.route('/transfers/in', methods=['GET'])
+@transfer_bp.route("/transfers/in", methods=["GET"])
 def get_transfer_in_data():
     """Get incoming transfer data for a specific team.
 
@@ -52,7 +52,7 @@ def get_transfer_in_data():
     return jsonify(response[0]), response[1]
 
 
-@transfer_bp.route('/transfers/out', methods=['GET'])
+@transfer_bp.route("/transfers/out", methods=["GET"])
 def get_transfer_out_data():
     """Get outgoing transfer data for a specific team.
 
@@ -78,7 +78,7 @@ def get_transfer_out_data():
     return jsonify(response[0]), response[1]
 
 
-@transfer_bp.route('/transfers/csv_file', methods=['GET'])
+@transfer_bp.route("/transfers/csv_file", methods=["GET"])
 @safe_file_cleanup
 def get_transfer_data_csv():
     """Export transfer data to a CSV file.
@@ -106,7 +106,9 @@ def get_transfer_data_csv():
     season = request.args.get("season")
     team = request.args.get("team")
     file_name = request.args.get("filename")
-    transfer_type: Literal["in", "both", "out"] | None = request.args.get("transfer_type")
+    transfer_type: Literal["in", "both", "out"] | None = request.args.get(
+        "transfer_type"
+    )
     if team is None:
         return {"error": "Missing team parameter"}, 400
     elif file_name is None:
@@ -118,20 +120,23 @@ def get_transfer_data_csv():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = TransferService().transfer_csv(team, safe_filename, transfer_type, season)
-    g.temp_state['file_path'] = response[0]
+    response = TransferService().transfer_csv(
+        team, safe_filename, transfer_type, season
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='text/csv',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.csv'
-                         )
+        return send_file(
+            file_path,
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name=f"{safe_filename}.csv",
+        )
     return jsonify(response[0]), response[1]
 
 
-@transfer_bp.route('/transfers/json_file', methods=['GET'])
+@transfer_bp.route("/transfers/json_file", methods=["GET"])
 @safe_file_cleanup
 def get_transfer_data_json():
     """Export transfer data to a JSON file.
@@ -159,7 +164,9 @@ def get_transfer_data_json():
     season = request.args.get("season")
     team = request.args.get("team")
     file_name = request.args.get("filename")
-    transfer_type: Literal["in", "both", "out"] | None = request.args.get("transfer_type")
+    transfer_type: Literal["in", "both", "out"] | None = request.args.get(
+        "transfer_type"
+    )
     if team is None:
         return {"error": "Missing team parameter"}, 400
     elif file_name is None:
@@ -171,14 +178,17 @@ def get_transfer_data_json():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = TransferService().transfer_json(team, safe_filename, transfer_type, season)
-    g.temp_state['file_path'] = response[0]
+    response = TransferService().transfer_json(
+        team, safe_filename, transfer_type, season
+    )
+    g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
         file_path = response[0]
-        return send_file(file_path,
-                         mimetype='application/json',
-                         as_attachment=True,
-                         download_name=f'{safe_filename}.json'
-                         )
+        return send_file(
+            file_path,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=f"{safe_filename}.json",
+        )
     return jsonify(response[0]), response[1]
