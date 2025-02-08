@@ -3,10 +3,8 @@ from xml.etree import ElementTree
 import hashlib
 import asyncio
 import aiohttp
-from functools import partial
 from tqdm import tqdm
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 from datetime import datetime
 import requests
@@ -15,9 +13,10 @@ from dataclasses import dataclass, field
 from requests import Response
 from bs4 import BeautifulSoup
 from lxml import etree
-from typing import Optional
+from typing import Optional, Union
 
-from premier_league.utils.methods import clean_xml_text
+from premier_league.utils.methods import clean_xml_text, extract_date_from_pattern
+from premier_league.utils.threading import threaded
 
 
 @dataclass
@@ -123,7 +122,7 @@ class BaseScrapper:
     @staticmethod
     def convert_to_xml(bsoup: BeautifulSoup):
         """
-        Convert a BeautifulSoup object to an lxml ElementTree.
+        Convert a BeautifulSoup object to a lxml ElementTree.
 
         Args:
             bsoup (BeautifulSoup): The BeautifulSoup object to convert.
@@ -252,18 +251,23 @@ class BaseDataSetScrapper:
         self.cache_dir.mkdir(exist_ok=True)
         self.pages = []
 
-    def get_cache_path(self, url):
+    def get_cache_path(self, url) -> Path:
+        pattern = r"/matches/[^/]+/[^/]+-(\w+)-(\d+)-(\d+)-"
+        date = extract_date_from_pattern(url, pattern)
         filename = hashlib.md5(url.encode()).hexdigest()
-        return self.cache_dir / f"{filename}.txt"
+        if date:
+            return self.cache_dir / "match_detail" / f"{date}-{filename}.txt"
+        return self.cache_dir / "match_overview" / f"{filename}.txt"
 
-    async def fetch_page(self, session, url, pbar, rate_limit):
+    async def fetch_page(self, session, url, pbar, rate_limit, return_html) -> Union[ElementTree, str]:
         cache_path = self.get_cache_path(url)
         if cache_path.exists():
             pbar.update(1)
-            return etree.HTML(cache_path.read_text(encoding="utf-8"))
+            cached_text = cache_path.read_text(encoding="utf-8")
+
+            return etree.HTML(cached_text) if return_html else cached_text
 
         try:
-            await asyncio.sleep(rate_limit)
             async with session.get(
                 url,
                 headers={
@@ -275,41 +279,50 @@ class BaseDataSetScrapper:
                     ),
                 },
             ) as response:
+                if response.status == 429:
+                    import sys
+                    print(f"Rate limited on {url}. Exiting...")
+                    sys.exit(1)
+                if response.status != 200:
+                    print(f"Error status {response.status} for {url}")
+                    return None
                 html = await response.text()
                 cache_path.write_text(html, encoding="utf-8")
 
                 pbar.update(1)
-                return etree.HTML(html)
+                await asyncio.sleep(rate_limit)
+                return etree.HTML(html) if return_html else html
 
         except Exception as e:
             print(f"Error fetching {url}: {e}")
             return None
 
-    def scrape_all(self, urls, max_concurrent=15, rate_limit=1):
+    def scrape_all(self, urls, max_concurrent=15, rate_limit=1, return_html=True, desc="Scraping Progress") -> list:
         try:
             loop = asyncio.get_running_loop()
             return loop.run_until_complete(
-                self._scrape_all(urls, max_concurrent, rate_limit)
+                self._scrape_all(urls, max_concurrent, rate_limit, return_html, desc)
             )
         except RuntimeError:
-            return asyncio.run(self._scrape_all(urls, max_concurrent, rate_limit))
+            return asyncio.run(self._scrape_all(urls, max_concurrent, rate_limit, return_html, desc))
 
-    async def _scrape_all(self, urls, max_concurrent, rate_limit):
+    async def _scrape_all(self, urls, max_concurrent, rate_limit, return_html, desc) -> list:
         async with aiohttp.ClientSession() as session:
-            with tqdm(total=len(urls), desc="Scraping Progress") as pbar:
+            with tqdm(total=len(urls), desc=desc) as pbar:
                 semaphore = asyncio.Semaphore(max_concurrent)
 
                 async def bounded_fetch(url):
                     async with semaphore:
-                        return await self.fetch_page(session, url, pbar, rate_limit)
+                        return await self.fetch_page(session, url, pbar, rate_limit, return_html)
 
                 tasks = [bounded_fetch(url) for url in urls]
                 results = await asyncio.gather(*tasks)
 
                 return [r for r in results if r is not None]
 
+    @threaded(show_progress=True)
     def _get_list_by_xpath(
-        self, page: ElementTree, xpath: str, clean: Optional[bool] = True
+        self, page: ElementTree, xpath: str, clean: Optional[bool] = True, **kwargs
     ) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
@@ -330,19 +343,23 @@ class BaseDataSetScrapper:
             elements_valid: list = [e for e in elements]
         return elements_valid or []
 
-    def process_xpath(self, xpath: str, clean: Optional[bool] = True) -> Optional[list]:
+    def process_xpath(self, xpath: str, clean: Optional[bool] = True, add_str: Optional[str] = None, desc: Optional[str] = None, flatten=True) -> list:
         """
         Get a list of elements matching the given XPath using a ThreadPoolExecutor.
 
         Args:
             xpath (str): The XPath query to execute.
             clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+            add_str (str, optional): A string to add to the beginning of each element. Defaults to None.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
-        with ThreadPoolExecutor() as executor:
-            func = partial(self._get_list_by_xpath, xpath=xpath, clean=clean)
-            results = list(executor.map(func, self.pages))
+        results = self._get_list_by_xpath(self.pages, xpath=xpath, clean=clean, desc=desc)
 
-        return [item for sublist in results for item in sublist]
+        if flatten:
+            if add_str:
+                return [f"{add_str}{item}" for sublist in results for item in sublist]
+            return [item for sublist in results for item in sublist]
+        else:
+            return results

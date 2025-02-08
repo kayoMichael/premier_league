@@ -11,6 +11,5 @@ class PredictorURL:
     @classmethod
     def get_all(cls, season: str):
         """Returns all formatted URLs for the given season."""
-        return {
-            league: url.format(SEASON=season) for league, url in cls.BASE_URLS.items()
-        }
+        return [url.format(SEASON=season) for url in cls.BASE_URLS.values()]
+

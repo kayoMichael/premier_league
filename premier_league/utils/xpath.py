@@ -19,5 +19,6 @@ class PLAYERS:
 
 class MATCHES:
     MATCH_REPORT_URL: str = (
-        "//td[@data-stat='match_report']/a[text()='Match Report']/@href"
+        "//td[@data-stat='match_report'][not(../td[@data-stat='notes'][contains(text(), 'Match Cancelled')])]/a[text()='Match Report']/@href"
     )
+    GAME_TABLE: str = "//table"

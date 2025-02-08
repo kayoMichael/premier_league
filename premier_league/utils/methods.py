@@ -2,7 +2,7 @@ from typing import Union
 import csv
 import json
 import os
-
+import re
 
 def remove_duplicates(seq) -> list:
     return list(dict.fromkeys(seq))
@@ -111,3 +111,23 @@ def export_to_json(
 
     with open(f"files/{file_name}.json", "w") as json_file:
         json.dump(json_data, json_file, indent=4, ensure_ascii=False)
+
+
+def extract_date_from_pattern(url, pattern):
+    match = re.search(pattern, url)
+
+    if match:
+        month_name = match.group(1)
+        day = match.group(2).zfill(2)
+        year = match.group(3)
+
+        month_dict = {
+            "January": "01", "February": "02", "March": "03", "April": "04",
+            "May": "05", "June": "06", "July": "07", "August": "08",
+            "September": "09", "October": "10", "November": "11", "December": "12"
+        }
+
+        month = month_dict.get(month_name, "00")
+        return f"{day}-{month}-{year}"
+
+    return None
