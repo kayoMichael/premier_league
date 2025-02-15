@@ -131,3 +131,19 @@ def extract_date_from_pattern(url, pattern):
         return f"{day}-{month}-{year}"
 
     return None
+
+def extract_date_league_from_url(url):
+    pattern = r"/(\d{4}-\d{4})/schedule/\d{4}-\d{4}-(\w+)-"
+
+    match = re.search(pattern, url)
+    if match:
+        season = match.group(1)
+        league = match.group(2)
+        print(f"Season: {season}")
+        print(f"League: {league}")
+
+    if match:
+        return match.group(1), match.group(2)
+
+    return None, None
+

@@ -1,10 +1,10 @@
 from http.client import HTTPException
 from xml.etree import ElementTree
 import hashlib
-import asyncio
-import aiohttp
+import time
 from tqdm import tqdm
 from pathlib import Path
+from typing import Callable, TypeVar, Dict, Any
 
 from datetime import datetime
 import requests
@@ -245,30 +245,25 @@ class BaseDataSetScrapper:
         url (list): The List of URL to scrape.
         page (ElementTree): The parsed XML representation of the web page.
     """
+    T = TypeVar('T')
 
     def __init__(self, cache_dir="cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         self.pages = []
 
-    def get_cache_path(self, url) -> Path:
-        pattern = r"/matches/[^/]+/[^/]+-(\w+)-(\d+)-(\d+)-"
-        date = extract_date_from_pattern(url, pattern)
-        filename = hashlib.md5(url.encode()).hexdigest()
-        if date:
-            return self.cache_dir / "match_detail" / f"{date}-{filename}.txt"
-        return self.cache_dir / "match_overview" / f"{filename}.txt"
+    def fetch_page(self, url, pbar, rate_limit, return_html) -> Union[etree.ElementTree, str, None]:
+        """
+        Fetch a page from the given URL with rate limits and progress bar.
 
-    async def fetch_page(self, session, url, pbar, rate_limit, return_html) -> Union[ElementTree, str]:
-        cache_path = self.get_cache_path(url)
-        if cache_path.exists():
-            pbar.update(1)
-            cached_text = cache_path.read_text(encoding="utf-8")
-
-            return etree.HTML(cached_text) if return_html else cached_text
-
+        Args:
+            url (str): The URL to fetch.
+            pbar (tqdm): The progress bar object.
+            rate_limit (int): The rate limit for requests in seconds.
+            return_html (bool): Whether to return the HTML content as a string.
+        """
         try:
-            async with session.get(
+            response = requests.get(
                 url,
                 headers={
                     "User-Agent": (
@@ -278,51 +273,39 @@ class BaseDataSetScrapper:
                         "Safari/537.36"
                     ),
                 },
-            ) as response:
-                if response.status == 429:
-                    import sys
-                    print(f"Rate limited on {url}. Exiting...")
-                    sys.exit(1)
-                if response.status != 200:
-                    print(f"Error status {response.status} for {url}")
-                    return None
-                html = await response.text()
-                cache_path.write_text(html, encoding="utf-8")
+            )
 
-                pbar.update(1)
-                await asyncio.sleep(rate_limit)
-                return etree.HTML(html) if return_html else html
+            if response.status_code == 429:
+                print(f"Rate limited on {url}. Exiting...")
+                exit(1)
+            if response.status_code != 200:
+                print(f"Error status {response.status_code} for {url}")
+                return None
+
+            html = response.text
+            pbar.update(1)
+            time.sleep(rate_limit)
+            return etree.HTML(html) if return_html else html
 
         except Exception as e:
             print(f"Error fetching {url}: {e}")
             return None
 
-    def scrape_all(self, urls, max_concurrent=15, rate_limit=1, return_html=True, desc="Scraping Progress") -> list:
-        try:
-            loop = asyncio.get_running_loop()
-            return loop.run_until_complete(
-                self._scrape_all(urls, max_concurrent, rate_limit, return_html, desc)
-            )
-        except RuntimeError:
-            return asyncio.run(self._scrape_all(urls, max_concurrent, rate_limit, return_html, desc))
-
-    async def _scrape_all(self, urls, max_concurrent, rate_limit, return_html, desc) -> list:
-        async with aiohttp.ClientSession() as session:
-            with tqdm(total=len(urls), desc=desc) as pbar:
-                semaphore = asyncio.Semaphore(max_concurrent)
-
-                async def bounded_fetch(url):
-                    async with semaphore:
-                        return await self.fetch_page(session, url, pbar, rate_limit, return_html)
-
-                tasks = [bounded_fetch(url) for url in urls]
-                results = await asyncio.gather(*tasks)
-
-                return [r for r in results if r is not None]
+    def scrape_and_process_all(self, urls, rate_limit=1, return_html=True, desc="Scraping Progress",
+                               process_func = None) -> list:
+        results = []
+        with tqdm(total=len(urls), desc=desc) as pbar:
+            for url in urls:
+                result = self.fetch_page(url, pbar, rate_limit, return_html)
+                if process_func:
+                    result = process_func(result, url=url)
+                if result is not None:
+                    results.append(result)
+        return results
 
     @threaded(show_progress=True)
-    def _get_list_by_xpath(
-        self, page: ElementTree, xpath: str, clean: Optional[bool] = True, **kwargs
+    def get_list_by_xpath(
+        self, page: ElementTree, xpath: str, clean: Optional[bool] = True, show_progress=True
     ) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
@@ -343,7 +326,7 @@ class BaseDataSetScrapper:
             elements_valid: list = [e for e in elements]
         return elements_valid or []
 
-    def process_xpath(self, xpath: str, clean: Optional[bool] = True, add_str: Optional[str] = None, desc: Optional[str] = None, flatten=True) -> list:
+    def process_xpath(self, xpath: str, clean: Optional[bool] = True, add_str: Optional[str] = None, desc: Optional[str] = None, flatten=True, show_progress=True) -> list:
         """
         Get a list of elements matching the given XPath using a ThreadPoolExecutor.
 
@@ -355,7 +338,7 @@ class BaseDataSetScrapper:
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
-        results = self._get_list_by_xpath(self.pages, xpath=xpath, clean=clean, desc=desc)
+        results = self.get_list_by_xpath(self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress)
 
         if flatten:
             if add_str:

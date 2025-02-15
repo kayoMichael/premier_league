@@ -15,37 +15,41 @@ from ..utils.methods import (
     export_to_json,
     export_to_dict,
 )
+from ..utils.url import RANKING_URL
+from typing import Optional
 from ..utils.xpath import RANKING
 
 
 class RankingTable(BaseScrapper):
     """
-    A class to scrape and process Premier League ranking data.
+    A class to scrape and process ranking data for the Top 5 Leagues.
 
     This class inherits from BaseScrapper and provides methods to retrieve,
-    process, and output Premier League ranking data in various formats.
+    process, and output ranking data for the Top 5 European Leagues in various formats.
 
     Attributes:
-        season (str): The current Premier League season.
+        season (str): The current season.
         target_season (str): The specific season to scrape data for, if provided.
         page: The scraped web page containing the ranking data.
         ranking_list (list): The processed ranking data.
     """
 
-    def __init__(self, target_season: str = None):
+    def __init__(self, target_season: Optional[str] = None, league: Optional[str] ="Premier League"):
         """
         Initialize the RankingTable instance.
 
         Args:
             target_season (str, optional): The specific season to scrape data for.
                                            If not provided, the current season is used.
+            league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
         super().__init__(
-            "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
+            RANKING_URL.get(season=target_season, league=league.lower()),
             target_season=target_season,
         )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
+        self.league = league.title()
 
     def _init_ranking_table(self) -> list:
         """
@@ -62,18 +66,18 @@ class RankingTable(BaseScrapper):
         ]
         return ranking_list
 
-    def get_prem_ranking_list(self) -> list:
+    def get_ranking_list(self) -> list:
         """
-        Get the Premier League ranking list.
+        Get the ranking list.
 
         Returns:
             list: The processed ranking data.
         """
         return self.ranking_list
 
-    def get_prem_ranking_csv(self, file_name: str, header: str = None) -> None:
+    def get_ranking_csv(self, file_name: str, header: str = None) -> None:
         """
-        Save the Premier League ranking data to a CSV file.
+        Save the ranking data to a CSV file.
 
         Args:
             file_name (str): The name of the file to save the data to (without extension).
@@ -81,9 +85,9 @@ class RankingTable(BaseScrapper):
         """
         export_to_csv(file_name, self.ranking_list, header)
 
-    def get_prem_ranking_json(self, file_name: str, header: str = None) -> None:
+    def get_ranking_json(self, file_name: str, header: str = None) -> None:
         """
-        Save the Premier League ranking data to a JSON file.
+        Save the ranking data to a JSON file.
 
         Args:
             file_name (str): The name of the file to save the data to (without extension).
@@ -91,9 +95,9 @@ class RankingTable(BaseScrapper):
         """
         export_to_json(file_name, self.ranking_list, header_1=header)
 
-    def get_prem_ranking_dict(self, header: str = None) -> dict:
+    def get_ranking_dict(self, header: str = None) -> dict:
         """
-        Get the Premier League ranking data as a dictionary.
+        Get the ranking data as a dictionary.
 
         Args:
             header (str): The header to include in the dictionary. (Parent Key for the entire data)
@@ -103,9 +107,9 @@ class RankingTable(BaseScrapper):
         """
         return export_to_dict(self.ranking_list, header_1=header)
 
-    def get_prem_ranking_pdf(self, file_name: str, dir="files") -> None:
+    def get_ranking_pdf(self, file_name: str, dir="files") -> None:
         """
-        Generate a PDF file containing the Premier League ranking table.
+        Generate a PDF file containing the ranking table.
 
         This method creates a formatted PDF file with the ranking table, including
         color-coded rows for European qualification spots and relegation.
@@ -119,7 +123,7 @@ class RankingTable(BaseScrapper):
         pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
         pdf.setFont("Arial", 16)
-        title = f"Premier League Table {self.season}"
+        title = f"{self.league} Table {self.season}"
         title_width = pdf.stringWidth(title, "Arial", 16)
 
         pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
@@ -128,7 +132,7 @@ class RankingTable(BaseScrapper):
         pdf.setFont("Arial", 12)
         table = Table(self.ranking_list)
 
-        if int(self.season[:4]) > 2019:
+        if int(self.season[:4]) > 2019 and self.league == "Premier League":
             european_spots = self._find_european_qualification_spot()
         else:
             european_spots = self._scrap_european_qualification_spot()
@@ -335,12 +339,13 @@ class RankingTable(BaseScrapper):
             possible_european_spot = ["UEFA Cup", "Intertoto Cup", "Champions League"]
         elif int(self.season[:4]) <= 2021:
             possible_european_spot = ["Champions League", "Europa League"]
+        else:
+            possible_european_spot = ["Champions League", "Europa League", "Europa Conference League"]
 
         qualified = {}
         for tournament in possible_european_spot:
             qualified_teams = []
-            xpath = f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()'
-            teams = self.get_list_by_xpath(xpath)
+            teams = self.get_list_by_xpath(f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()')
             for item in teams:
                 if "(" in item or ")" in item or "Fair Play" in item:
                     continue
@@ -376,7 +381,7 @@ class RankingTable(BaseScrapper):
         Args:
             team_index (int): The index of the team to check.
             competition_indices (list): Indices of teams already qualified for a competition.
-            all_teams (list): List of all teams in the current premier league.
+            all_teams (list): List of all teams in the current league.
 
         Returns:
             list: A list of indices where the team appears in the competition qualifiers.
