@@ -29,28 +29,48 @@ class TransferService:
         try:
             transfer_data = Transfers(season).transfer_out_table(team)
         except TeamNotFoundError:
-            return {"error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."}, 400
+            return {
+                "error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."
+            }, 400
 
         return transfer_data, 200
 
     @staticmethod
-    def transfer_csv(team: str, file_name: str, transfer_type: Literal["in", "out", "both"], season: str = None):
+    def transfer_csv(
+        team: str,
+        file_name: str,
+        transfer_type: Literal["in", "out", "both"],
+        season: str = None,
+    ):
         try:
             Transfers(season).transfer_csv(team, file_name, transfer_type)
         except TeamNotFoundError:
-            return {"error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."}, 400
+            return {
+                "error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."
+            }, 400
 
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-        file_directory = os.path.join(project_root, 'files', f"{file_name}.csv")
+        project_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+        file_directory = os.path.join(project_root, "files", f"{file_name}.csv")
         return file_directory, 200
 
     @staticmethod
-    def transfer_json(team: str, file_name: str, transfer_type: Literal["in", "out", "both"] = "both", season: str = None):
+    def transfer_json(
+        team: str,
+        file_name: str,
+        transfer_type: Literal["in", "out", "both"] = "both",
+        season: str = None,
+    ):
         try:
             Transfers(season).transfer_json(team, file_name, transfer_type)
         except TeamNotFoundError:
-            return {"error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."}, 400
+            return {
+                "error": f"No Team by the name of {team} exists in the {season} Premier league Season. For all teams in the {season} please invoke /all_teams."
+            }, 400
 
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-        file_directory = os.path.join(project_root, 'files', f"{file_name}.json")
+        project_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+        file_directory = os.path.join(project_root, "files", f"{file_name}.json")
         return file_directory, 200

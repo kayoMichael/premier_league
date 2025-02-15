@@ -29,7 +29,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         season_top_players_list (list): Processed list of top players and their statistics.
     """
 
-    def __init__(self, stat_type: Literal['G', 'A'], target_season: str = None):
+    def __init__(self, stat_type: Literal["G", "A"], target_season: str = None):
         """
         Initialize the PlayerSeasonLeaders object.
 
@@ -65,23 +65,30 @@ class PlayerSeasonLeaders(BaseScrapper):
             list[list[str]]: Processed list of top players and their statistics.
         """
         player_list = self.get_list_by_xpath(PLAYERS.PLAYER_STATS)
-        top_players = [item for item in player_list if not re.match(r'^\d+\.$', item) and
-                       not re.match(r'^\d{4}/\d{4}$', item) and
-                       item.strip() and
-                       item != "\n" and
-                       item != 'Latest news »']
+        top_players = [
+            item
+            for item in player_list
+            if not re.match(r"^\d+\.$", item)
+            and not re.match(r"^\d{4}/\d{4}$", item)
+            and item.strip()
+            and item != "\n"
+            and item != "Latest news »"
+        ]
 
-        partitioned = [["Name", "Country", "Club", "Goals", "In Play Goals+Penalty"]] if self.stat_type == "G" else \
-            [["Name", "Country", "Club", "Assists"]]
+        partitioned = (
+            [["Name", "Country", "Club", "Goals", "In Play Goals+Penalty"]]
+            if self.stat_type == "G"
+            else [["Name", "Country", "Club", "Assists"]]
+        )
 
         i = 0
         partition = 4 if self.stat_type == "A" else 5
         while i < len(top_players):
-            sublist = top_players[i:i + partition]
+            sublist = top_players[i : i + partition]
             if len(sublist) > 3 and not sublist[3].isdigit():
-                sublist = top_players[i:i + partition + 1]
+                sublist = top_players[i : i + partition + 1]
                 sublist[2:4] = [f"{sublist[2]}, {sublist[3]}"]
-                i += (partition + 1)
+                i += partition + 1
             else:
                 i += partition
             partitioned.append(sublist)
@@ -96,7 +103,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         Returns:
             list: The season_top_players_list attribute.
         """
-        return self.season_top_players_list[:limit if limit else 100]
+        return self.season_top_players_list[: limit + 1 if limit else 100]
 
     def get_top_stats_csv(self, file_name: str, header: str = None, limit: int = None):
         """
@@ -131,7 +138,7 @@ class PlayerSeasonLeaders(BaseScrapper):
             file_name (str): The name of the file to save (without extension).
             path (str): The path to save the PDF file
         """
-        pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+        pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
         pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
 
         # Set up the title
@@ -146,20 +153,24 @@ class PlayerSeasonLeaders(BaseScrapper):
         pdf.setFont("Arial", 12)
         table = Table(self.season_top_players_list[:22])
 
-        table_styles = [('BACKGROUND', (0, 0), (-1, 0), HexColor("#cccccc")),
-                        ('BACKGROUND', (0, 1), (-1, 1), HexColor("#FFD700")),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, -1), 'Arial'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 12),
-                        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                        ('TOPPADDING', (0, 0), (-1, -1), 12),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black)]
+        table_styles = [
+            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
+            ("BACKGROUND", (0, 1), (-1, 1), HexColor("#FFD700")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+            ("FONTSIZE", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ]
         table.setStyle(TableStyle(table_styles))
 
         # Position and draw the table
         table.wrapOn(pdf, 0, 0)
-        table_width, table_height = table.wrapOn(pdf, A3[0] - 2 * inch, A3[1] - 2 * inch)
+        table_width, table_height = table.wrapOn(
+            pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
+        )
         x = (A3[0] - table_width) / 2
         y = A3[1] - table_height - 1 * inch
         table.drawOn(pdf, x, y)

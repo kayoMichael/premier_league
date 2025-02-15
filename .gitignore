@@ -7,3 +7,5 @@
 *.egg-info/
 dist/
 .DS_Store
+cache/
+main.py

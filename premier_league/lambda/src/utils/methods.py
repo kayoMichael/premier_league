@@ -4,12 +4,18 @@ import boto3
 import uuid
 import os
 
-s3 = boto3.client('s3')
-s3_name = os.getenv('S3_BUCKET_NAME')
+s3 = boto3.client("s3")
+s3_name = os.getenv("S3_BUCKET_NAME")
 
 
-def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, header: str = None, header_2: str = None):
-    with open(f"tmp/{file_name}.csv", mode='w', newline='') as file:
+def export_to_csv(
+    file_name: str,
+    data: list[list],
+    data_2: list[list] = None,
+    header: str = None,
+    header_2: str = None,
+):
+    with open(f"tmp/{file_name}.csv", mode="w", newline="") as file:
         writer = csv.writer(file)
         if header:
             writer.writerow([header])
@@ -23,14 +29,17 @@ def export_to_csv(file_name: str, data: list[list], data_2: list[list] = None, h
             writer.writerows(data_2)
 
 
-def export_to_dict(data: list[list], data_2: list[list] = None, header_1: str = None, header_2: str = None):
+def export_to_dict(
+    data: list[list],
+    data_2: list[list] = None,
+    header_1: str = None,
+    header_2: str = None,
+):
     keys = data[0]
 
     json_data = [dict(zip(keys, row)) for row in data[1:]]
     if header_1:
-        json_data = {
-            header_1: json_data
-        }
+        json_data = {header_1: json_data}
 
     if data_2 and not header_2:
         raise ValueError("Header for the second data set is required.")
@@ -42,21 +51,23 @@ def export_to_dict(data: list[list], data_2: list[list] = None, header_1: str = 
     return json_data
 
 
-def export_to_json(file_name: str, data: list[list], data_2: list[list] = None, header_1: str = None, header_2: str = None):
+def export_to_json(
+    file_name: str,
+    data: list[list],
+    data_2: list[list] = None,
+    header_1: str = None,
+    header_2: str = None,
+):
     json_data = export_to_dict(data, data_2, header_1, header_2)
 
-    with open(f'tmp/{file_name}.json', 'w') as json_file:
+    with open(f"tmp/{file_name}.json", "w") as json_file:
         json.dump(json_data, json_file, indent=4, ensure_ascii=False)
 
 
 def save_to_s3(file_name: str, bucket_name: str):
     s3_directory = uuid.uuid4()
     s3_file_path = f"{s3_directory}/{file_name}"
-    s3.upload_file(
-        Filename=f"tmp/{file_name}",
-        Bucket=bucket_name,
-        Key=s3_file_path
-    )
+    s3.upload_file(Filename=f"tmp/{file_name}", Bucket=bucket_name, Key=s3_file_path)
 
     return s3_file_path
 
@@ -74,7 +85,4 @@ def generate_http_response(status_code, file_path):
     """
     body = f"File saved to {s3_name} in directory {file_path}"
 
-    return {
-        'statusCode': status_code,
-        'body': json.dumps(body)
-    }
+    return {"statusCode": status_code, "body": json.dumps(body)}

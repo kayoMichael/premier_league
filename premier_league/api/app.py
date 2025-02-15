@@ -12,8 +12,10 @@ from premier_league.api.routes.ranking import ranking_bp
 from premier_league.api.routes.players import players_bp
 from premier_league.api.routes.transfer import transfer_bp
 
+
 class StandaloneGunicornApp(gunicorn.app.base.BaseApplication):
     """Standalone Gunicorn application for running the Flask app in production mode."""
+
     def __init__(self, app, options=None):
         self.options = options or {}
         self.application = app
@@ -40,14 +42,18 @@ def create_app(config: Optional[Union[ServerConfig, str, dict]] = None) -> Flask
         config = ServerConfig.from_dict(config)
 
     # Apply configuration from settings
-    app.config.update({
-        'SERVER_NAME': f"{config.HOST}:{config.PORT}" if config.HOST != '0.0.0.0' else None,
-        'DEBUG': config.DEBUG,
-        'SECRET_KEY': config.SECRET_KEY,
-        'JSON_SORT_KEYS': config.JSON_SORT_KEYS,
-        'CACHE_TYPE': config.CACHE_TYPE,
-        'CACHE_DEFAULT_TIMEOUT': config.CACHE_DEFAULT_TIMEOUT,
-    })
+    app.config.update(
+        {
+            "SERVER_NAME": (
+                f"{config.HOST}:{config.PORT}" if config.HOST != "0.0.0.0" else None
+            ),
+            "DEBUG": config.DEBUG,
+            "SECRET_KEY": config.SECRET_KEY,
+            "JSON_SORT_KEYS": config.JSON_SORT_KEYS,
+            "CACHE_TYPE": config.CACHE_TYPE,
+            "CACHE_DEFAULT_TIMEOUT": config.CACHE_DEFAULT_TIMEOUT,
+        }
+    )
 
     logging.basicConfig(level=getattr(logging, config.LOG_LEVEL))
 
@@ -56,7 +62,7 @@ def create_app(config: Optional[Union[ServerConfig, str, dict]] = None) -> Flask
     Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=[f"{config.RATE_LIMIT} per minute"]
+        default_limits=[f"{config.RATE_LIMIT} per minute"],
     )
 
     app.register_blueprint(players_bp)
@@ -67,13 +73,13 @@ def create_app(config: Optional[Union[ServerConfig, str, dict]] = None) -> Flask
 
 
 def run_server(
-        host: str = "0.0.0.0",
-        port: int = 3000,
-        debug: bool = False,
-        config_path: Optional[str] = None,
-        config_dict: Optional[dict] = None,
-        mode: str = "development",
-        workers: int = 1
+    host: str = "0.0.0.0",
+    port: int = 3000,
+    debug: bool = False,
+    config_path: Optional[str] = None,
+    config_dict: Optional[dict] = None,
+    mode: str = "development",
+    workers: int = 1,
 ) -> None:
     """
     Run the Premier League API server.
@@ -96,25 +102,17 @@ def run_server(
     elif config_dict:
         config = ServerConfig.from_dict(config_dict)
     else:
-        config = ServerConfig(
-            HOST=host,
-            PORT=port,
-            DEBUG=debug
-        )
+        config = ServerConfig(HOST=host, PORT=port, DEBUG=debug)
 
     app, config = create_app(config)
     if mode == "development":
-        app.run(
-            host=config.HOST,
-            port=config.PORT,
-            debug=config.DEBUG
-        )
+        app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
     else:
         options = {
-            'bind': f'{config.HOST}:{config.PORT}',
-            'workers': workers,
-            'worker_class': 'sync',
-            'timeout': 120,
-            'preload_app': True
+            "bind": f"{config.HOST}:{config.PORT}",
+            "workers": workers,
+            "worker_class": "sync",
+            "timeout": 120,
+            "preload_app": True,
         }
         StandaloneGunicornApp(app, options).run()

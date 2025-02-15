@@ -3,9 +3,11 @@ import os
 import yaml
 from dataclasses import dataclass, field
 
+
 @dataclass
 class ServerConfig:
     """Server configuration settings."""
+
     HOST: str = "0.0.0.0"
     PORT: int = 3000
     DEBUG: bool = False
@@ -18,30 +20,36 @@ class ServerConfig:
     LOG_LEVEL: str = "INFO"
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> 'ServerConfig':
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "ServerConfig":
         """Create config from dictionary."""
-        return cls(**{k: v for k, v in config_dict.items() if k in ServerConfig.__annotations__})
+        return cls(
+            **{
+                k: v
+                for k, v in config_dict.items()
+                if k in ServerConfig.__annotations__
+            }
+        )
 
     @classmethod
-    def from_yaml(cls, yaml_path: str) -> 'ServerConfig':
+    def from_yaml(cls, yaml_path: str) -> "ServerConfig":
         """Load config from YAML file."""
-        with open(yaml_path, 'r') as f:
+        with open(yaml_path, "r") as f:
             config_dict = yaml.safe_load(f)
         return cls.from_dict(config_dict)
 
     @classmethod
-    def from_env(cls) -> 'ServerConfig':
+    def from_env(cls) -> "ServerConfig":
         """Load config from environment variables."""
         config_dict = {}
         for key in cls.__annotations__:
             env_val = os.getenv(f"PREMIER_LEAGUE_{key}")
             if env_val is not None:
-                if key in ['PORT', 'RATE_LIMIT', 'CACHE_DEFAULT_TIMEOUT']:
+                if key in ["PORT", "RATE_LIMIT", "CACHE_DEFAULT_TIMEOUT"]:
                     config_dict[key] = int(env_val)
-                elif key in ['DEBUG']:
-                    config_dict[key] = env_val.lower() == 'true'
-                elif key in ['CORS_ORIGINS']:
-                    config_dict[key] = env_val.split(',')
+                elif key in ["DEBUG"]:
+                    config_dict[key] = env_val.lower() == "true"
+                elif key in ["CORS_ORIGINS"]:
+                    config_dict[key] = env_val.split(",")
                 else:
                     config_dict[key] = env_val
         return cls.from_dict(config_dict)

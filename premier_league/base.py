@@ -1,5 +1,10 @@
 from http.client import HTTPException
 from xml.etree import ElementTree
+import hashlib
+import time
+from tqdm import tqdm
+from pathlib import Path
+from typing import Callable, TypeVar, Dict, Any
 
 from datetime import datetime
 import requests
@@ -8,9 +13,10 @@ from dataclasses import dataclass, field
 from requests import Response
 from bs4 import BeautifulSoup
 from lxml import etree
-from typing import Optional
+from typing import Optional, Union
 
-from premier_league.utils.methods import clean_xml_text
+from premier_league.utils.methods import clean_xml_text, extract_date_from_pattern
+from premier_league.utils.threading import threaded
 
 
 @dataclass
@@ -22,11 +28,14 @@ class BaseScrapper:
     and extracting data using XPath queries.
 
     Attributes:
-        url (str): The URL to scrape.
+        url (str): The URL to scrape. The URL can contain placeholders for the season.
         page (ElementTree): The parsed XML representation of the web page.
+        season (str): The processed season for scraping data.
+        target_season (str): The target season (parameter) for scraping data.
     """
 
     url: str
+    requires_season: bool = True
     page: ElementTree = field(default_factory=lambda: None, init=False)
     season: str = field(default=None, init=False)
     target_season: str = field(default=None)
@@ -38,21 +47,36 @@ class BaseScrapper:
         Raises:
             ValueError: If the target_season is invalid or in an incorrect format.
         """
+        if self.requires_season:
+            return
+
         current_date = datetime.now()
         if not self.target_season:
             current_year = current_date.year
             current_month = current_date.month
             if current_month >= 8:
-                self.season = f"{current_year}-{str(current_year + 1)[2:]}" if self.url[-1] != "/" else f"{current_year}-{str(current_year + 1)}"
+                self.season = (
+                    f"{current_year}-{str(current_year + 1)[2:]}"
+                    if self.url[-1] != "/"
+                    else f"{current_year}-{str(current_year + 1)}"
+                )
             else:
-                self.season = f"{current_year - 1}-{str(current_year)[2:]}" if self.url[-1] != "/" else f"{current_year - 1}-{str(current_year)}"
+                self.season = (
+                    f"{current_year - 1}-{str(current_year)[2:]}"
+                    if self.url[-1] != "/"
+                    else f"{current_year - 1}-{str(current_year)}"
+                )
         else:
-            if not re.match(r'^\d{4}-\d{4}$', self.target_season):
-                raise ValueError("Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen.")
+            if not re.match(r"^\d{4}-\d{4}$", self.target_season):
+                raise ValueError(
+                    "Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen."
+                )
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
-                raise ValueError("Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992.")
+                raise ValueError(
+                    "Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992."
+                )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
             self.season = self.target_season
@@ -98,7 +122,7 @@ class BaseScrapper:
     @staticmethod
     def convert_to_xml(bsoup: BeautifulSoup):
         """
-        Convert a BeautifulSoup object to an lxml ElementTree.
+        Convert a BeautifulSoup object to a lxml ElementTree.
 
         Args:
             bsoup (BeautifulSoup): The BeautifulSoup object to convert.
@@ -133,7 +157,9 @@ class BaseScrapper:
         bsoup: BeautifulSoup = self.parse_to_html()
         return self.convert_to_xml(bsoup=bsoup)
 
-    def get_list_by_xpath(self, xpath: str, clean: Optional[bool] = True) -> Optional[list]:
+    def get_list_by_xpath(
+        self, xpath: str, clean: Optional[bool] = True
+    ) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
 
@@ -146,19 +172,21 @@ class BaseScrapper:
         """
         elements: list = self.page.xpath(xpath)
         if clean:
-            elements_valid: list = [clean_xml_text(e) for e in elements if clean_xml_text(e)]
+            elements_valid: list = [
+                clean_xml_text(e) for e in elements if clean_xml_text(e)
+            ]
         else:
             elements_valid: list = [e for e in elements]
         return elements_valid or []
 
     def get_text_by_xpath(
-            self,
-            xpath: str,
-            pos: int = 0,
-            index: Optional[int] = None,
-            index_from: Optional[int] = None,
-            index_to: Optional[int] = None,
-            join_str: Optional[str] = None,
+        self,
+        xpath: str,
+        pos: int = 0,
+        index: Optional[int] = None,
+        index_from: Optional[int] = None,
+        index_to: Optional[int] = None,
+        join_str: Optional[str] = None,
     ) -> Optional[str]:
         """
         Get text content from elements matching the given XPath.
@@ -203,3 +231,141 @@ class BaseScrapper:
             return clean_xml_text(element[pos])
         except IndexError:
             return None
+
+
+class BaseDataSetScrapper:
+    """
+    A class for scraping, managing and caching large amounts of data from a given list of URLs. It uses a flatfile
+    caching approach for permanent caching of data to prevent data loss when rate limited or throttled.
+
+    This class provides methods for retrieving, processing, and exporting data sets
+    from a specified URL. It inherits from the BaseScrapper class.
+
+    Attributes:
+        url (list): The List of URL to scrape.
+        page (ElementTree): The parsed XML representation of the web page.
+    """
+
+    T = TypeVar("T")
+
+    def __init__(self, cache_dir="cache"):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(exist_ok=True)
+        self.pages = []
+
+    def fetch_page(
+        self, url, pbar, rate_limit, return_html
+    ) -> Union[etree.ElementTree, str, None]:
+        """
+        Fetch a page from the given URL with rate limits and progress bar.
+
+        Args:
+            url (str): The URL to fetch.
+            pbar (tqdm): The progress bar object.
+            rate_limit (int): The rate limit for requests in seconds.
+            return_html (bool): Whether to return the HTML content as a string.
+        """
+        try:
+            response = requests.get(
+                url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/122.0.0.0 "
+                        "Safari/537.36"
+                    ),
+                },
+            )
+
+            if response.status_code == 429:
+                print(f"Rate limited on {url}. Exiting...")
+                exit(1)
+            if response.status_code != 200:
+                print(f"Error status {response.status_code} for {url}")
+                return None
+
+            html = response.text
+            pbar.update(1)
+            time.sleep(rate_limit)
+            return etree.HTML(html) if return_html else html
+
+        except Exception as e:
+            print(f"Error fetching {url}: {e}")
+            return None
+
+    def scrape_and_process_all(
+        self,
+        urls,
+        rate_limit=1,
+        return_html=True,
+        desc="Scraping Progress",
+        process_func=None,
+    ) -> list:
+        results = []
+        with tqdm(total=len(urls), desc=desc) as pbar:
+            for url in urls:
+                result = self.fetch_page(url, pbar, rate_limit, return_html)
+                if process_func:
+                    result = process_func(result, url=url)
+                if result is not None:
+                    results.append(result)
+        return results
+
+    @threaded(show_progress=True)
+    def get_list_by_xpath(
+        self,
+        page: ElementTree,
+        xpath: str,
+        clean: Optional[bool] = True,
+        show_progress=True,
+    ) -> Optional[list]:
+        """
+        Get a list of elements matching the given XPath.
+
+        Args:
+            xpath (str): The XPath query to execute.
+            clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+
+        Returns:
+            Optional[list]: A list of matching elements, or an empty list if no matches are found.
+        """
+        elements: list = page.xpath(xpath)
+        if clean:
+            elements_valid: list = [
+                clean_xml_text(e) for e in elements if clean_xml_text(e)
+            ]
+        else:
+            elements_valid: list = [e for e in elements]
+        return elements_valid or []
+
+    def process_xpath(
+        self,
+        xpath: str,
+        clean: Optional[bool] = True,
+        add_str: Optional[str] = None,
+        desc: Optional[str] = None,
+        flatten=True,
+        show_progress=True,
+    ) -> list:
+        """
+        Get a list of elements matching the given XPath using a ThreadPoolExecutor.
+
+        Args:
+            xpath (str): The XPath query to execute.
+            clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+            add_str (str, optional): A string to add to the beginning of each element. Defaults to None.
+
+        Returns:
+            Optional[list]: A list of matching elements, or an empty list if no matches are found.
+        """
+        results = self.get_list_by_xpath(
+            self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress
+        )
+
+        if flatten:
+            if add_str:
+                return [f"{add_str}{item}" for sublist in results for item in sublist]
+            return [item for sublist in results for item in sublist]
+        else:
+            return results
