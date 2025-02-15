@@ -1,33 +1,36 @@
+import pdb
 import re
-from typing import Literal
+from typing import Literal, Optional
 
 from prettytable import PrettyTable
 
 from premier_league.base import BaseScrapper
 from premier_league.utils.xpath import PLAYERS
 from premier_league.utils.methods import clean_xml_text, export_to_csv, export_to_json
+from ..utils.url import TRANSFERS_URL
 
 
 class TeamNotFoundError(Exception):
     """
-    Exception raised when a team is not found in the specified Premier League season.
+    Exception raised when a team is not found in the specified season.
 
     Attributes:
         team (str): The name of the team that was not found.
         season (str): The season in which the team was searched for.
     """
 
-    def __init__(self, team: str, season: str):
+    def __init__(self, team: str, season: str, league: str):
         self.team = team
         self.season = season
+        self.league = league.title()
 
     def __str__(self):
-        return f"Team '{self.team}' not found in the {self.season} Premier League season. For all current teams, use the 'get_all_current_teams' method."
+        return f"Team '{self.team}' not found in the {self.season} {self.league} season. For all current teams, use the 'get_all_current_teams' method."
 
 
 class Transfers(BaseScrapper):
     """
-    A class for scraping and managing Player transfer data for Premier League teams in a given season.
+    A class for scraping and managing Player transfer data for a Professional team in a given season.
 
     This class inherits from BaseScrapper and provides methods to retrieve,
     display, and export transfer data for specified teams and seasons.
@@ -37,16 +40,22 @@ class Transfers(BaseScrapper):
         _season_top_players (dict): A dictionary containing transfer data for all teams.
     """
 
-    def __init__(self, target_season: str = None):
+    def __init__(
+        self,
+        target_season: Optional[str] = None,
+        league: Optional[str] = "premier league",
+    ):
         """
         Initialize the Transfers object.
 
         Args:
             target_season (str, optional): The target season for transfer data. Defaults to None.
+            league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
+        self.league = league.lower()
         super().__init__(
-            "https://www.worldfootball.net/transfers/eng-premier-league-{SEASON}/",
-            target_season,
+            TRANSFERS_URL.get(self.league),
+            target_season=target_season,
         )
         self.page = self.request_url_page()
         self._season_top_players = self._init_transfers_table()
@@ -105,6 +114,9 @@ class Transfers(BaseScrapper):
                         cleaned_transfer_data[team][0].append(partition)
                     else:
                         cleaned_transfer_data[team][1].append(partition)
+
+        if "competition news" in cleaned_transfer_data:
+            cleaned_transfer_data.pop("competition news")
         return cleaned_transfer_data
 
     def print_transfer_table(self, team: str) -> None:
@@ -124,7 +136,7 @@ class Transfers(BaseScrapper):
             transfer_in = self._season_top_players[team.lower()][0]
             transfer_out = self._season_top_players[team.lower()][1]
         except KeyError:
-            raise TeamNotFoundError(team, self.season)
+            raise TeamNotFoundError(team, self.season, self.league)
 
         in_table.field_names = transfer_in[0]
         out_table.field_names = transfer_out[0]
@@ -153,7 +165,7 @@ class Transfers(BaseScrapper):
         try:
             return self._season_top_players[team.lower()][0]
         except KeyError:
-            raise TeamNotFoundError(team, self.season)
+            raise TeamNotFoundError(team, self.season, self.league)
 
     def transfer_out_table(self, team: str) -> list[list[str]]:
         """
@@ -171,7 +183,7 @@ class Transfers(BaseScrapper):
         try:
             return self._season_top_players[team.lower()][1]
         except KeyError:
-            raise TeamNotFoundError(team, self.season)
+            raise TeamNotFoundError(team, self.season, self.league)
 
     def transfer_csv(
         self,
@@ -243,9 +255,9 @@ class Transfers(BaseScrapper):
 
     def get_all_current_teams(self) -> list[str]:
         """
-        Get a list of all teams in the given Premier League Season.
+        Get a list of all teams in the given League Season.
 
         Returns:
             list[str]: A list of team names.
         """
-        return list(self._season_top_players.keys())
+        return [team.title() for team in self._season_top_players.keys()]

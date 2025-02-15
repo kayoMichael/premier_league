@@ -1,3 +1,4 @@
+import pdb
 from http.client import HTTPException
 from xml.etree import ElementTree
 import hashlib
@@ -47,7 +48,7 @@ class BaseScrapper:
         Raises:
             ValueError: If the target_season is invalid or in an incorrect format.
         """
-        if self.requires_season:
+        if not self.requires_season:
             return
 
         current_date = datetime.now()
@@ -75,7 +76,7 @@ class BaseScrapper:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
                 raise ValueError(
-                    "Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992."
+                    "Invalid target_season. This library only supports seasons after 1992-1993. It cannot be before 1992."
                 )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
@@ -143,7 +144,7 @@ class BaseScrapper:
         Returns:
             BaseScrapper: A new BaseScrapper instance with the page loaded.
         """
-        scrapper = BaseScrapper(url=additional_url)
+        scrapper = BaseScrapper(url=additional_url, requires_season=False)
         scrapper.page = BaseScrapper.request_url_page(scrapper)
         return scrapper
 
@@ -245,8 +246,6 @@ class BaseDataSetScrapper:
         url (list): The List of URL to scrape.
         page (ElementTree): The parsed XML representation of the web page.
     """
-
-    T = TypeVar("T")
 
     def __init__(self, cache_dir="cache"):
         self.cache_dir = Path(cache_dir)
