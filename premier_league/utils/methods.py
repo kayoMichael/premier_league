@@ -4,6 +4,7 @@ import json
 import os
 import re
 
+
 def remove_duplicates(seq) -> list:
     return list(dict.fromkeys(seq))
 
@@ -122,15 +123,25 @@ def extract_date_from_pattern(url, pattern):
         year = match.group(3)
 
         month_dict = {
-            "January": "01", "February": "02", "March": "03", "April": "04",
-            "May": "05", "June": "06", "July": "07", "August": "08",
-            "September": "09", "October": "10", "November": "11", "December": "12"
+            "January": "01",
+            "February": "02",
+            "March": "03",
+            "April": "04",
+            "May": "05",
+            "June": "06",
+            "July": "07",
+            "August": "08",
+            "September": "09",
+            "October": "10",
+            "November": "11",
+            "December": "12",
         }
 
         month = month_dict.get(month_name, "00")
         return f"{day}-{month}-{year}"
 
     return None
+
 
 def extract_date_league_from_url(url):
     pattern = r"/(\d{4}-\d{4})/schedule/\d{4}-\d{4}-(\w+)-"
@@ -146,4 +157,3 @@ def extract_date_league_from_url(url):
         return match.group(1), match.group(2)
 
     return None, None
-

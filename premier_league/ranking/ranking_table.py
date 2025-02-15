@@ -34,7 +34,11 @@ class RankingTable(BaseScrapper):
         ranking_list (list): The processed ranking data.
     """
 
-    def __init__(self, target_season: Optional[str] = None, league: Optional[str] ="Premier League"):
+    def __init__(
+        self,
+        target_season: Optional[str] = None,
+        league: Optional[str] = "Premier League",
+    ):
         """
         Initialize the RankingTable instance.
 
@@ -340,12 +344,18 @@ class RankingTable(BaseScrapper):
         elif int(self.season[:4]) <= 2021:
             possible_european_spot = ["Champions League", "Europa League"]
         else:
-            possible_european_spot = ["Champions League", "Europa League", "Europa Conference League"]
+            possible_european_spot = [
+                "Champions League",
+                "Europa League",
+                "Europa Conference League",
+            ]
 
         qualified = {}
         for tournament in possible_european_spot:
             qualified_teams = []
-            teams = self.get_list_by_xpath(f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()')
+            teams = self.get_list_by_xpath(
+                f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()'
+            )
             for item in teams:
                 if "(" in item or ")" in item or "Fair Play" in item:
                     continue

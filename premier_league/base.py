@@ -245,14 +245,17 @@ class BaseDataSetScrapper:
         url (list): The List of URL to scrape.
         page (ElementTree): The parsed XML representation of the web page.
     """
-    T = TypeVar('T')
+
+    T = TypeVar("T")
 
     def __init__(self, cache_dir="cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         self.pages = []
 
-    def fetch_page(self, url, pbar, rate_limit, return_html) -> Union[etree.ElementTree, str, None]:
+    def fetch_page(
+        self, url, pbar, rate_limit, return_html
+    ) -> Union[etree.ElementTree, str, None]:
         """
         Fetch a page from the given URL with rate limits and progress bar.
 
@@ -291,8 +294,14 @@ class BaseDataSetScrapper:
             print(f"Error fetching {url}: {e}")
             return None
 
-    def scrape_and_process_all(self, urls, rate_limit=1, return_html=True, desc="Scraping Progress",
-                               process_func = None) -> list:
+    def scrape_and_process_all(
+        self,
+        urls,
+        rate_limit=1,
+        return_html=True,
+        desc="Scraping Progress",
+        process_func=None,
+    ) -> list:
         results = []
         with tqdm(total=len(urls), desc=desc) as pbar:
             for url in urls:
@@ -305,7 +314,11 @@ class BaseDataSetScrapper:
 
     @threaded(show_progress=True)
     def get_list_by_xpath(
-        self, page: ElementTree, xpath: str, clean: Optional[bool] = True, show_progress=True
+        self,
+        page: ElementTree,
+        xpath: str,
+        clean: Optional[bool] = True,
+        show_progress=True,
     ) -> Optional[list]:
         """
         Get a list of elements matching the given XPath.
@@ -326,7 +339,15 @@ class BaseDataSetScrapper:
             elements_valid: list = [e for e in elements]
         return elements_valid or []
 
-    def process_xpath(self, xpath: str, clean: Optional[bool] = True, add_str: Optional[str] = None, desc: Optional[str] = None, flatten=True, show_progress=True) -> list:
+    def process_xpath(
+        self,
+        xpath: str,
+        clean: Optional[bool] = True,
+        add_str: Optional[str] = None,
+        desc: Optional[str] = None,
+        flatten=True,
+        show_progress=True,
+    ) -> list:
         """
         Get a list of elements matching the given XPath using a ThreadPoolExecutor.
 
@@ -338,7 +359,9 @@ class BaseDataSetScrapper:
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
-        results = self.get_list_by_xpath(self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress)
+        results = self.get_list_by_xpath(
+            self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress
+        )
 
         if flatten:
             if add_str:

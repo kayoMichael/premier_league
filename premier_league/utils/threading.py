@@ -4,16 +4,18 @@ from functools import wraps
 from tqdm import tqdm
 import inspect
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-def run_threaded(func: Callable[..., T],
-                 items: List[any],
-                 desc: str = "Processing",
-                 unit: str = "items",
-                 max_workers: Optional[int] = None,
-                 chunk_size: Optional[int] = None,
-                 show_progress: bool = False) -> List[T]:
+def run_threaded(
+    func: Callable[..., T],
+    items: List[any],
+    desc: str = "Processing",
+    unit: str = "items",
+    max_workers: Optional[int] = None,
+    chunk_size: Optional[int] = None,
+    show_progress: bool = False,
+) -> List[T]:
     """
     Runs a function across multiple items using thread pooling.
 
@@ -43,11 +45,13 @@ def run_threaded(func: Callable[..., T],
     return results
 
 
-def threaded(max_workers: Optional[int] = None,
-             chunk_size: Optional[int] = None,
-             desc: Optional[str] = None,
-             unit: Optional[str] = None,
-             show_progress: Optional[bool] = False) -> Callable:
+def threaded(
+    max_workers: Optional[int] = None,
+    chunk_size: Optional[int] = None,
+    desc: Optional[str] = None,
+    unit: Optional[str] = None,
+    show_progress: Optional[bool] = False,
+) -> Callable:
     """
     Decorator to make any function run in threaded mode when given a list input.
 
@@ -62,11 +66,13 @@ def threaded(max_workers: Optional[int] = None,
     def decorator(func: Callable[..., T]) -> Callable[..., List[T]]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> List[T]:
-            self_arg = args[0] if args and hasattr(args[0], '__class__') else None
+            self_arg = args[0] if args and hasattr(args[0], "__class__") else None
             items = args[1] if len(args) > 1 else kwargs.pop("items", None)
 
             if items is None:
-                raise ValueError("Threaded decorator requires an iterable as the first argument after 'self'")
+                raise ValueError(
+                    "Threaded decorator requires an iterable as the first argument after 'self'"
+                )
 
             decorator_kwargs = {
                 "max_workers": kwargs.pop("max_workers", max_workers),
@@ -81,7 +87,9 @@ def threaded(max_workers: Optional[int] = None,
 
             def wrapped_func(item):
                 func_signature = inspect.signature(func)
-                valid_kwargs = {k: v for k, v in kwargs.items() if k in func_signature.parameters}
+                valid_kwargs = {
+                    k: v for k, v in kwargs.items() if k in func_signature.parameters
+                }
 
                 if self_arg:
                     return func(self_arg, item, **valid_kwargs)

@@ -14,6 +14,7 @@ class PredictorURL:
         """Returns all formatted URLs for the given season."""
         return cls.BASE_URLS[league].format(SEASON=season)
 
+
 class RANKING_URL:
     BASEURLS = {
         "premier league": "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
@@ -22,10 +23,12 @@ class RANKING_URL:
         "ligue 1": "https://en.wikipedia.org/wiki/{SEASON}_Ligue_1",
         "bundesliga": "https://en.wikipedia.org/wiki/{SEASON}_Bundesliga",
     }
+
     @classmethod
     def get(cls, season: str, league: str) -> str:
         """Returns all formatted URLs for the given season."""
         if league not in cls.BASEURLS:
-            raise ValueError(f"League {league} not found. The Available Leagues are: {', '.join(cls.BASEURLS.keys())}")
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASEURLS.keys())}"
+            )
         return cls.BASE_URLS[league].format(SEASON=season)
-
