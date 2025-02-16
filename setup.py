@@ -1,4 +1,9 @@
-from setuptools import setup, find_packages
+import pathlib
+
+from setuptools import find_packages, setup
+
+dir = pathlib.Path(__file__).parent.resolve()
+long_description = (dir / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="premier_league",
@@ -7,6 +12,8 @@ setup(
     author="Michael Li",
     description="Premier League Data Analysis Package",
     packages=find_packages(exclude=["test*", "build*", "dist*", "files*", "venv*"]),
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     install_requires=[
         "reportlab==4.0.4",
         "requests==2.28.1",

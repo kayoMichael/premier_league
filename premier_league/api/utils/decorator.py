@@ -1,6 +1,7 @@
 import os
-from flask import after_this_request, current_app, g
 from functools import wraps
+
+from flask import after_this_request, current_app, g
 
 
 def safe_file_cleanup(func):

@@ -1,5 +1,6 @@
-from premier_league import RankingTable
 import os
+
+from premier_league import RankingTable
 
 
 class RankingService:

@@ -1,8 +1,9 @@
 import csv
 import json
-import boto3
-import uuid
 import os
+import uuid
+
+import boto3
 
 s3 = boto3.client("s3")
 s3_name = os.getenv("S3_BUCKET_NAME")

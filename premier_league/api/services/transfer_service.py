@@ -1,7 +1,8 @@
+import os
+from typing import Literal
+
 from premier_league import Transfers
 from premier_league.transfers.transfers import TeamNotFoundError
-from typing import Literal
-import os
 
 
 class TransferService:

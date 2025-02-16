@@ -1,10 +1,7 @@
+from utils.methods import (export_to_csv, export_to_json,
+                           generate_http_response, save_to_s3)
+
 from premier_league import PlayerSeasonLeaders
-from utils.methods import (
-    export_to_csv,
-    export_to_json,
-    generate_http_response,
-    save_to_s3,
-)
 
 
 class PlayerLambda(PlayerSeasonLeaders):

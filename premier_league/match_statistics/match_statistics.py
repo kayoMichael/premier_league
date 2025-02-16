@@ -1,18 +1,20 @@
-from xml.etree.ElementTree import ElementTree
 import re
-from lxml import etree
-from sqlalchemy import func, and_, or_
-from sqlalchemy.orm import joinedload, aliased
-from sqlalchemy.sql import exists
 from datetime import datetime
-from typing import Union, List, Optional, Type
+from typing import List, Optional, Type, Union
+from xml.etree.ElementTree import ElementTree
+
 import pandas as pd
+from lxml import etree
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.sql import exists
 
 from premier_league.base import BaseDataSetScrapper
+
+from ..data.initialize import init_db
+from ..data.models import Game, GameStats, League, Team
 from ..utils.url import PredictorURL
 from ..utils.xpath import MATCHES
-from ..data.initialize import init_db
-from ..data.models import League, Team, Game, GameStats
 
 
 class MatchStatistics(BaseDataSetScrapper):

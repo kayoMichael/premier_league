@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, Index, String
+from sqlalchemy import Column, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
+
 from premier_league.data.models.base import Base
 
 

@@ -1,11 +1,12 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import Session
-from .models.league import League
-from importlib.resources import files
-import appdirs
 import os
 import sqlite3
+from importlib.resources import files
+
+import appdirs
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from .models.league import League
 
 
 def init_db(

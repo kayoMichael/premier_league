@@ -1,23 +1,21 @@
 import os
-
-from premier_league.base import BaseScrapper
 import re
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A3
-from reportlab.lib.units import inch
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from reportlab.platypus import Table, TableStyle
+from typing import Optional
+
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
-from ..utils.methods import (
-    remove_qualification_relegation_and_css,
-    export_to_csv,
-    export_to_json,
-    export_to_dict,
-)
+from reportlab.lib.pagesizes import A3
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
+
+from premier_league.base import BaseScrapper
+
+from ..utils.methods import (export_to_csv, export_to_dict, export_to_json,
+                             remove_qualification_relegation_and_css)
 from ..utils.url import RANKING_URL
-from typing import Optional
 from ..utils.xpath import RANKING
 
 

@@ -4,8 +4,10 @@ from typing import Literal, Optional
 from prettytable import PrettyTable
 
 from premier_league.base import BaseScrapper
+from premier_league.utils.methods import (clean_xml_text, export_to_csv,
+                                          export_to_json)
 from premier_league.utils.xpath import PLAYERS
-from premier_league.utils.methods import clean_xml_text, export_to_csv, export_to_json
+
 from ..utils.url import TRANSFERS_URL
 
 

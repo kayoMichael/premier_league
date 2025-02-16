@@ -11,9 +11,10 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 
 from premier_league.base import BaseScrapper
-from ..utils.xpath import PLAYERS
+
+from ..utils.methods import export_to_csv, export_to_json
 from ..utils.url import PLAYERS_URL
-from ..utils.methods import export_to_json, export_to_csv
+from ..utils.xpath import PLAYERS
 
 
 class PlayerSeasonLeaders(BaseScrapper):

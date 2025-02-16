@@ -1,7 +1,8 @@
-import os
-import premier_league
-import subprocess
 import argparse
+import os
+import subprocess
+
+import premier_league
 
 
 def get_serverless_path():

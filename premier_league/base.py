@@ -1,17 +1,17 @@
-from http.client import HTTPException
-from xml.etree import ElementTree
-import time
-from tqdm import tqdm
-from pathlib import Path
-
-from datetime import datetime
-import requests
 import re
+import time
 from dataclasses import dataclass, field
-from requests import Response
+from datetime import datetime
+from http.client import HTTPException
+from pathlib import Path
+from typing import Optional, Union
+from xml.etree import ElementTree
+
+import requests
 from bs4 import BeautifulSoup
 from lxml import etree
-from typing import Optional, Union
+from requests import Response
+from tqdm import tqdm
 
 from premier_league.utils.methods import clean_xml_text
 from premier_league.utils.threading import threaded

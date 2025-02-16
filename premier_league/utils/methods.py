@@ -1,8 +1,8 @@
-from typing import Union
 import csv
 import json
 import os
 import re
+from typing import Union
 
 
 def remove_duplicates(seq) -> list:

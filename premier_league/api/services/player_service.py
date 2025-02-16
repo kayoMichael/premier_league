@@ -1,5 +1,6 @@
-from premier_league import PlayerSeasonLeaders
 import os
+
+from premier_league import PlayerSeasonLeaders
 
 
 class PlayerService:

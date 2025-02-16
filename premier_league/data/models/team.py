@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Index
-from premier_league.data.models.base import Base
+from sqlalchemy import Column, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
+
+from premier_league.data.models.base import Base
 
 
 class Team(Base):

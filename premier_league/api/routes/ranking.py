@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify, request, send_file, g
-from premier_league.api.services.ranking_service import RankingService
+from flask import Blueprint, g, jsonify, request, send_file
 from werkzeug.utils import secure_filename
+
+from premier_league.api.services.ranking_service import RankingService
 from premier_league.api.utils.decorator import safe_file_cleanup
 
 ranking_bp = Blueprint("ranking", __name__)

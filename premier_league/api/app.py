@@ -1,15 +1,16 @@
-from flask import Flask
-from flask_cors import CORS
-from flask_caching import Cache
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 import logging
 from typing import Optional, Union
+
 import gunicorn.app.base
+from flask import Flask
+from flask_caching import Cache
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from premier_league.api.config.config import ServerConfig
-from premier_league.api.routes.ranking import ranking_bp
 from premier_league.api.routes.players import players_bp
+from premier_league.api.routes.ranking import ranking_bp
 from premier_league.api.routes.transfer import transfer_bp
 
 

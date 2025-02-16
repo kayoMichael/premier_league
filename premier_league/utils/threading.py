@@ -1,8 +1,9 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Callable, List, TypeVar, Optional
-from functools import wraps
-from tqdm import tqdm
 import inspect
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import wraps
+from typing import Callable, List, Optional, TypeVar
+
+from tqdm import tqdm
 
 T = TypeVar("T")
 
