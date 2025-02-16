@@ -16,7 +16,7 @@ class HandleLambdaRequest(Transfers):
         filename=None,
         export_type=None,
         s3_name="premier-league-data",
-        league=None
+        league=None,
     ):
         super().__init__(target_season=season, league=league)
         self.path = path

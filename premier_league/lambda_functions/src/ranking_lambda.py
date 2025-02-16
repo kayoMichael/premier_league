@@ -9,7 +9,13 @@ from utils.methods import (
 
 class RankingLambda(RankingTable):
     def __init__(
-        self, path, season, filename, header, s3_name: None = "premier-league-data", league=None
+        self,
+        path,
+        season,
+        filename,
+        header,
+        s3_name: None = "premier-league-data",
+        league=None,
     ):
         super().__init__(league, season)
         self.filename = filename

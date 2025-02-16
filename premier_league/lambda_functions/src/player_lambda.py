@@ -67,7 +67,9 @@ def lambda_handler(event, _):
         return generate_http_response(400, "Invalid stat type")
 
     try:
-        player = PlayerLambda(event["path"], season, stat_type, filename, limit, header, league)
+        player = PlayerLambda(
+            event["path"], season, stat_type, filename, limit, header, league
+        )
         return player.handle_request()
     except Exception as e:
         return generate_http_response(500, str(e))

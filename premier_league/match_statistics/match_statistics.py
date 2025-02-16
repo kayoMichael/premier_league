@@ -1,4 +1,3 @@
-import traceback
 from xml.etree.ElementTree import ElementTree
 import re
 from lxml import etree
@@ -6,7 +5,7 @@ from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import joinedload, aliased
 from sqlalchemy.sql import exists
 from datetime import datetime
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Type
 import pandas as pd
 
 from premier_league.base import BaseDataSetScrapper
@@ -134,7 +133,7 @@ class MatchStatistics(BaseDataSetScrapper):
         # Save to CSV
         df.to_csv(output_path, index=False)
 
-    def match_statistic(self, season, team):
+    def match_statistic(self, season, team) -> List[Type[Game]]:
         """
         Retrieve match statistics for a given season or a specific team.
 
@@ -158,7 +157,7 @@ class MatchStatistics(BaseDataSetScrapper):
             return team.home_games + team.away_games
         return self.session.query(Game).filter_by(season=season).all()
 
-    def get_all_leagues(self):
+    def get_all_leagues(self) -> List[str]:
         """
         Retrieve all leagues from the database.
 
@@ -167,7 +166,7 @@ class MatchStatistics(BaseDataSetScrapper):
         """
         return [league.name for league in self.leagues]
 
-    def get_all_teams(self):
+    def get_all_teams(self) -> List[str]:
         """
         Retrieve all teams from the database.
 
@@ -176,7 +175,16 @@ class MatchStatistics(BaseDataSetScrapper):
         """
         return [team.name for team in self.session.query(Team.name).all()]
 
-    def get_team_games(self, team_name: str):
+    def get_team_games(self, team_name: str) -> List[Type[Game]]:
+        """
+        Retrieve all games for a specific team.
+
+        Args:
+            team_name (str): The name of the team to filter games.
+
+        Returns:
+            List[Game]: A list of Game objects that match the query.
+        """
         team = self.session.query(Team).filter(Team.name == team_name).first()
 
         if not team:
@@ -196,7 +204,7 @@ class MatchStatistics(BaseDataSetScrapper):
 
         return [game.to_dict(include_relationships=True) for game in games]
 
-    def get_games_by_season(self, season: str, match_week: int):
+    def get_games_by_season(self, season: str, match_week: int) -> List[dict]:
         """
         Retrieve all games for a specific season and match week.
 
@@ -225,7 +233,7 @@ class MatchStatistics(BaseDataSetScrapper):
 
     def get_games_before_date(
         self, date: datetime, limit: int = 10, team: Optional[str] = None
-    ):
+    ) -> List[dict]:
         """
         Retrieve games before a specific date with a limit. For a specific Team
 
@@ -423,7 +431,7 @@ class MatchStatistics(BaseDataSetScrapper):
         return None
 
     @staticmethod
-    def _return_by_position_data(table):
+    def _return_by_position_data(table) -> tuple:
         """
         Process a DataFrame of player positions and group the data by primary position.
 
@@ -757,7 +765,6 @@ class MatchStatistics(BaseDataSetScrapper):
         except Exception as e:
             print(f"Error processing match data: {str(e)}")
             print("Error URL: ", url)
-            traceback.print_exc()
             return
 
         try:
