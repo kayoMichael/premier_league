@@ -5,19 +5,16 @@ from utils.methods import (
     generate_http_response,
     save_to_s3,
 )
-import os
-
-
-S3_NAME = os.getenv("S3_BUCKET_NAME")
 
 
 class HandleLambdaRequest(Transfers):
-    def __init__(self, path, team, season=None, filename=None, export_type=None):
+    def __init__(self, path, team, season=None, filename=None, export_type=None, s3_name="premier-league-data"):
         super().__init__(target_season=season)
         self.path = path
         self.target_team = team
         self.filename = filename
         self.export_type = export_type
+        self.s3_name = s3_name
 
     def handle_request(self):
         if self.path == "/transfers_in":
@@ -53,7 +50,7 @@ class HandleLambdaRequest(Transfers):
                     header=f"{self.season} {self.target_team} Transfers Out",
                 )
             return generate_http_response(
-                200, save_to_s3(f"{self.filename}.csv", S3_NAME), "csv"
+                200, save_to_s3(f"{self.filename}.csv", self.s3_name)
             )
         elif self.path == "/transfers_json":
             if self.filename is None:
@@ -86,7 +83,7 @@ class HandleLambdaRequest(Transfers):
                 )
 
             return generate_http_response(
-                200, save_to_s3(f"{self.filename}.json", S3_NAME)
+                200, save_to_s3(f"{self.filename}.json", self.s3_name)
             )
 
 

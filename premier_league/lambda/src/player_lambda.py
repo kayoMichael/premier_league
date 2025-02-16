@@ -5,20 +5,18 @@ from utils.methods import (
     generate_http_response,
     save_to_s3,
 )
-import os
-
-S3_NAME = os.getenv("S3_BUCKET_NAME")
 
 
 class PlayerLambda(PlayerSeasonLeaders):
     def __init__(
-        self, path, stat_type, season=None, filename=None, limit=None, header=None
+        self, path, stat_type, season=None, filename=None, limit=None, header=None, s3_name="premier-league-data"
     ):
         super().__init__(stat_type, season)
         self.filename = filename
         self.path = path
         self.limit = limit
         self.header = header
+        self.s3_name = s3_name
 
     def handle_request(self):
         if self.path == "/player_ranking":
@@ -30,7 +28,7 @@ class PlayerLambda(PlayerSeasonLeaders):
                 self.filename, self.get_top_stats_list(self.limit), header=self.header
             )
             return generate_http_response(
-                200, save_to_s3(f"{self.filename}.csv", S3_NAME)
+                200, save_to_s3(f"{self.filename}.csv", self.s3_name)
             )
         elif self.path == "/player_json":
             if self.filename is None:
@@ -39,14 +37,14 @@ class PlayerLambda(PlayerSeasonLeaders):
                 self.filename, self.get_top_stats_list(self.limit), header_1=self.header
             )
             return generate_http_response(
-                200, save_to_s3(f"{self.filename}.json", S3_NAME)
+                200, save_to_s3(f"{self.filename}.json", self.s3_name)
             )
         elif self.path == "/player_pdf":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
             self.get_top_stats_pdf(self.filename, "tmp")
             return generate_http_response(
-                200, save_to_s3(f"{self.filename}.pdf", S3_NAME)
+                200, save_to_s3(f"{self.filename}.pdf", self.s3_name)
             )
 
 

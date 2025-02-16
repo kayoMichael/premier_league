@@ -137,7 +137,7 @@ class RankingTable(BaseScrapper):
 
         pdf.setFont("Arial", 12)
         table = Table(self.ranking_list)
-        if int(self.season[:4]) > 2019 and self.league == "Premier League":
+        if int(self.season[:4]) >= 2021 and self.league == "Premier League":
             european_spots = self._find_european_qualification_spot()
         else:
             european_spots = self._scrap_european_qualification_spot()
@@ -326,7 +326,6 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
-        possible_european_spot = []
         if int(self.season[:4]) == 1997:
             possible_european_spot = [
                 "UEFA Cup",
@@ -350,7 +349,6 @@ class RankingTable(BaseScrapper):
                 "Europa League",
                 "Europa Conference League",
             ]
-
         qualified = {}
         for tournament in possible_european_spot:
             qualified_teams = []

@@ -77,7 +77,8 @@ class BaseScrapper:
                 )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
-            self.season = self.target_season
+            else:
+                self.season = self.target_season
 
         self.url = self.url.replace("{SEASON}", self.season)
 

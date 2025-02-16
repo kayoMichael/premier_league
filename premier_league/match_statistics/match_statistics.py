@@ -198,7 +198,7 @@ class MatchStatistics(BaseDataSetScrapper):
 
         return [game.to_dict(include_relationships=True) for game in games]
 
-    def get_games_by_season(self, season: str, match_week: str):
+    def get_games_by_season(self, season: str, match_week: int):
         """
         Retrieve all games for a specific season and match week.
 
@@ -209,9 +209,16 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             List[Game]: A list of Game objects that match the query.
         """
+        if not re.match(r"^\d{4}-\d{4}$", season):
+            raise ValueError(
+                "Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen."
+            )
         games = self.session.query(Game) \
                 .filter_by(season=season, match_week=match_week) \
                 .all()
+
+        if not games:
+            raise ValueError(f"No games found for season: {season} and match week: {match_week}")
         return [game.to_dict(include_relationships=True) for game in games]
 
     def get_games_before_date(self, date: datetime, limit: int = 10, team: Optional[str] = None):

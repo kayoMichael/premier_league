@@ -10,8 +10,6 @@ provider:
       Action:
         - s3:PutObject
         - s3:GetObject
-  environment:
-    S3_BUCKET_NAME: REPLACE_ME_BUCKET
 
 
 functions:

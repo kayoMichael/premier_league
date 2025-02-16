@@ -10,3 +10,5 @@ dist/
 cache/
 main.py
 *.db
+.eggs/
+test/
