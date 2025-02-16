@@ -1,5 +1,4 @@
-service: Premier_League_Data_Scrapper
-
+service: Premier_League_Data_Tool
 
 provider:
   name: aws

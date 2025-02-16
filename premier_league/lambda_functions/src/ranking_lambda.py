@@ -1,4 +1,4 @@
-from premier_league import PlayerSeasonLeaders
+from premier_league import RankingTable
 from utils.methods import (
     export_to_csv,
     export_to_json,
@@ -7,49 +7,37 @@ from utils.methods import (
 )
 
 
-class PlayerLambda(PlayerSeasonLeaders):
+class RankingLambda(RankingTable):
     def __init__(
-        self,
-        path,
-        stat_type,
-        season=None,
-        filename=None,
-        limit=None,
-        header=None,
-        s3_name="premier-league-data",
+        self, path, season, filename, header, s3_name: None = "premier-league-data", league=None
     ):
-        super().__init__(stat_type, season)
+        super().__init__(league, season)
         self.filename = filename
         self.path = path
-        self.limit = limit
         self.header = header
         self.s3_name = s3_name
 
     def handle_request(self):
-        if self.path == "/player_ranking":
-            return self.get_top_stats_list(self.limit)
-        elif self.path == "/player_csv":
+        if self.path == "/ranking":
+            return self.get_ranking_list()
+        elif self.path == "/ranking_csv":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
-            export_to_csv(
-                self.filename, self.get_top_stats_list(self.limit), header=self.header
-            )
+            export_to_csv(self.filename, self.get_ranking_list(), header=self.header)
             return generate_http_response(
                 200, save_to_s3(f"{self.filename}.csv", self.s3_name)
             )
-        elif self.path == "/player_json":
+        elif self.path == "/ranking_json":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
-            export_to_json(
-                self.filename, self.get_top_stats_list(self.limit), header_1=self.header
-            )
+            export_to_json(self.filename, self.get_ranking_list(), header_1=self.header)
             return generate_http_response(
                 200, save_to_s3(f"{self.filename}.json", self.s3_name)
             )
-        elif self.path == "/player_pdf":
+        elif self.path == "/ranking_pdf":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
-            self.get_top_stats_pdf(self.filename, "tmp")
+            self.get_ranking_pdf(self.filename, "tmp")
             return generate_http_response(
                 200, save_to_s3(f"{self.filename}.pdf", self.s3_name)
             )
@@ -57,15 +45,12 @@ class PlayerLambda(PlayerSeasonLeaders):
 
 def lambda_handler(event, _):
     season = event["queryStringParameters"].get("season")
-    stat_type = event["queryStringParameters"].get("stat_type")
     filename = event["queryStringParameters"].get("filename")
-    limit = event["queryStringParameters"].get("limit")
     header = event["queryStringParameters"].get("header")
-    if stat_type != "G" or stat_type != "A":
-        return generate_http_response(400, "Invalid stat type")
+    league = event["queryStringParameters"].get("league")
 
     try:
-        player = PlayerLambda(event["path"], season, stat_type, filename, limit, header)
+        player = RankingLambda(event["path"], season, filename, header, league)
         return player.handle_request()
     except Exception as e:
         return generate_http_response(500, str(e))

@@ -16,8 +16,9 @@ class HandleLambdaRequest(Transfers):
         filename=None,
         export_type=None,
         s3_name="premier-league-data",
+        league=None
     ):
-        super().__init__(target_season=season)
+        super().__init__(target_season=season, league=league)
         self.path = path
         self.target_team = team
         self.filename = filename
@@ -100,13 +101,14 @@ def lambda_handler(event, _):
     team = event["queryStringParameters"].get("team")
     filename = event["queryStringParameters"].get("filename")
     export_type = event["queryStringParameters"].get("export_type")
+    league = event["queryStringParameters"].get("league")
 
     if team is None:
         return generate_http_response(400, "Team is required")
 
     try:
         response = HandleLambdaRequest(
-            event["path"], team, season, filename, export_type
+            event["path"], team, season, filename, export_type, league
         ).handle_request()
     except Exception as e:
         return generate_http_response(400, str(e))
