@@ -1,11 +1,8 @@
-import pdb
 from http.client import HTTPException
 from xml.etree import ElementTree
-import hashlib
 import time
 from tqdm import tqdm
 from pathlib import Path
-from typing import Callable, TypeVar, Dict, Any
 
 from datetime import datetime
 import requests
@@ -16,7 +13,7 @@ from bs4 import BeautifulSoup
 from lxml import etree
 from typing import Optional, Union
 
-from premier_league.utils.methods import clean_xml_text, extract_date_from_pattern
+from premier_league.utils.methods import clean_xml_text
 from premier_league.utils.threading import threaded
 
 
@@ -301,6 +298,16 @@ class BaseDataSetScrapper:
         desc="Scraping Progress",
         process_func=None,
     ) -> list:
+        """
+        Scrape and process all URLs in the list with rate limits.
+
+        Args:
+            urls (list): The list of URLs to scrape.
+            rate_limit (int, optional): The rate limit for requests in seconds. Defaults to 1.
+            return_html (bool, optional): Whether to return the HTML content as a string. Defaults to True.
+            desc (str, optional): The description for the progress bar. Defaults to "Scraping Progress".
+            process_func (Callable, optional): The function to process the results. Defaults to None.
+        """
         results = []
         with tqdm(total=len(urls), desc=desc) as pbar:
             for url in urls:
@@ -323,8 +330,10 @@ class BaseDataSetScrapper:
         Get a list of elements matching the given XPath.
 
         Args:
+            page (ElementTree): The parsed XML representation of the web page.
             xpath (str): The XPath query to execute.
             clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
@@ -354,6 +363,9 @@ class BaseDataSetScrapper:
             xpath (str): The XPath query to execute.
             clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
             add_str (str, optional): A string to add to the beginning of each element. Defaults to None.
+            desc (str, optional): The description for the progress bar. Defaults to None.
+            flatten (bool, optional): Whether to flatten the results into a single list. Defaults to True.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.

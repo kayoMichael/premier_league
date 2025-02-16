@@ -2,10 +2,11 @@ import traceback
 from xml.etree.ElementTree import ElementTree
 import re
 from lxml import etree
-from sqlalchemy import func, and_
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func, and_, or_
+from sqlalchemy.orm import joinedload, aliased
+from sqlalchemy.sql import exists
 from datetime import datetime
-from typing import Union
+from typing import Union, List, Optional
 import pandas as pd
 
 from premier_league.base import BaseDataSetScrapper
@@ -15,7 +16,7 @@ from ..data.initialize import init_db
 from ..data.models import League, Team, Game, GameStats
 
 
-class PLPredictor(BaseDataSetScrapper):
+class MatchStatistics(BaseDataSetScrapper):
     """
     A class to scrape, process, and update Premier League Predictor data for machine learning purposes.
 
@@ -157,14 +158,117 @@ class PLPredictor(BaseDataSetScrapper):
             return team.home_games + team.away_games
         return self.session.query(Game).filter_by(season=season).all()
 
-    def get_data_set(self):
+    def get_all_leagues(self):
         """
-        Retrieve the current dataset of games from the database.
+        Retrieve all leagues from the database.
 
         Returns:
-            List[Game]: A list of all Game objects in the database.
+            List[str]: A list of all League names in the database.
         """
-        return self.session.query(Game).all()
+        return [league.name for league in self.leagues]
+
+    def get_all_teams(self):
+        """
+        Retrieve all teams from the database.
+
+        Returns:
+            List[str]: A list of all Team names in the database.
+        """
+        return [team.name for team in self.session.query(Team.name).all()]
+
+    def get_team_games(self, team_name: str):
+        team = self.session.query(Team).filter(Team.name == team_name).first()
+
+        if not team:
+            raise ValueError(f"No team found with name: {team_name}")
+
+        games = self.session.query(Game).join(
+            Team,
+            or_(
+                Game.home_team_id == Team.id,
+                Game.away_team_id == Team.id
+            )
+        ).filter(
+            Team.name == team_name
+        ).options(
+            joinedload(Game.home_team),
+            joinedload(Game.away_team),
+            joinedload(Game.game_stats)
+        ).all()
+
+        return [game.to_dict(include_relationships=True) for game in games]
+
+    def get_games_by_season(self, season: str, match_week: str):
+        """
+        Retrieve all games for a specific season and match week.
+
+        Args:
+            season (str): The season to query (e.g., "2021-2022").
+            match_week (str): The match week to filter games.
+
+        Returns:
+            List[Game]: A list of Game objects that match the query.
+        """
+        games = self.session.query(Game) \
+                .filter_by(season=season, match_week=match_week) \
+                .all()
+        return [game.to_dict(include_relationships=True) for game in games]
+
+    def get_games_before_date(self, date: datetime, limit: int = 10, team: Optional[str] = None):
+        """
+        Retrieve games before a specific date with a limit. For a specific Team
+
+        Args:
+            date (datetime): The reference date.
+            limit (int, optional): Maximum number of games to return. Defaults to 10.
+            team (str, optional): The name of the team to filter games. Defaults to None.
+
+        Returns:
+            List[Game]: A list of Game objects before the given date, ordered by date descending.
+        """
+        query = self.session.query(Game) \
+            .filter(Game.date < date)
+
+        if team:
+            team_id = self.session.query(Team.id).filter_by(name=team).scalar()
+            if not team_id:
+                raise ValueError(f"No team found with name: {team}")
+            query = query.filter(
+                (Game.home_team_id == team_id) | (Game.away_team_id == team_id)
+            )
+
+        games = query.order_by(Game.date.desc()) \
+                .limit(limit) \
+                .all()
+
+        return [game.to_dict(include_relationships=True) for game in games]
+
+    def get_game_stats_before_date(self, date: datetime, limit: int = 10, team: Optional[str] = None) -> List[dict]:
+        """
+        Retrieve game statistics before a specific date with a limit. For a specific Team
+
+        Args:
+            date (datetime): The reference date.
+            limit (int, optional): Maximum number of games to return. Defaults to 10.
+            team (str, optional): The name of the team to filter games. Defaults to None.
+        Returns:
+            List[dict]: List of game statistics dictionaries with relationships included.
+            Returns empty list if no results found.
+        """
+        if not isinstance(date, datetime):
+            raise ValueError("Date must be a datetime object")
+
+        query = self.session.query(GameStats).join(Game).filter(Game.date < date)
+
+        if team:
+            team_alias = aliased(Team)
+            query = query.filter(
+                exists().where((team_alias.id == GameStats.team_id) & (team_alias.name == team))
+            )
+
+        stats = query.order_by(Game.date.desc()).limit(limit).all()
+
+        return [stat.to_dict() for stat in stats] if stats else []
 
     def update_data_set(self):
         """
@@ -215,16 +319,12 @@ class PLPredictor(BaseDataSetScrapper):
             desc="Fetching Match Details",
             process_func=self._process_data,
         )
-
-        # First get max season per league
         latest_seasons = (
             self.session.query(League.name, func.max(Game.season).label("max_season"))
             .join(Game)
             .group_by(League.name)
             .subquery()
         )
-
-        # Then get the latest games info
         latest_games = (
             self.session.query(
                 League.name,
@@ -244,7 +344,7 @@ class PLPredictor(BaseDataSetScrapper):
             .all()
         )
 
-        # Update the leagues with the latest season and match week
+        # Update Legaue Updated Date Index
         for league, season, latest_match_week in latest_games:
             league_obj = self.session.query(League).filter_by(name=league).first()
             league_obj.up_to_date_season = season
