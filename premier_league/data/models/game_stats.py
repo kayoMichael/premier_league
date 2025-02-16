@@ -9,7 +9,6 @@ class GameStats(Base):
     id = Column(Integer, primary_key=True)
     game_id = Column(String, ForeignKey("game.id"))
     team_id = Column(String, ForeignKey("team.id"))
-    team_ranking_score = Column(Integer)
 
     game = relationship("Game", uselist=False, back_populates="game_stats")
     team = relationship("Team", back_populates="game_stats")
@@ -124,3 +123,8 @@ class GameStats(Base):
     offside_DF = Column(Integer)
 
     __table_args__ = (Index("idx_game_team_stats", "game_id", "team_id", unique=True),)
+
+    def to_dict(self):
+        result = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+        return result

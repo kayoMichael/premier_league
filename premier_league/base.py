@@ -1,10 +1,8 @@
 from http.client import HTTPException
 from xml.etree import ElementTree
-import hashlib
 import time
 from tqdm import tqdm
 from pathlib import Path
-from typing import Callable, TypeVar, Dict, Any
 
 from datetime import datetime
 import requests
@@ -15,7 +13,7 @@ from bs4 import BeautifulSoup
 from lxml import etree
 from typing import Optional, Union
 
-from premier_league.utils.methods import clean_xml_text, extract_date_from_pattern
+from premier_league.utils.methods import clean_xml_text
 from premier_league.utils.threading import threaded
 
 
@@ -47,7 +45,7 @@ class BaseScrapper:
         Raises:
             ValueError: If the target_season is invalid or in an incorrect format.
         """
-        if self.requires_season:
+        if not self.requires_season:
             return
 
         current_date = datetime.now()
@@ -75,11 +73,12 @@ class BaseScrapper:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
             elif int(self.target_season[:4]) < 1992:
                 raise ValueError(
-                    "Invalid target_season. The First Premier League season was 1992-1993. It cannot be before 1992."
+                    "Invalid target_season. This library only supports seasons after 1992-1993. It cannot be before 1992."
                 )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
-            self.season = self.target_season
+            else:
+                self.season = self.target_season
 
         self.url = self.url.replace("{SEASON}", self.season)
 
@@ -143,7 +142,7 @@ class BaseScrapper:
         Returns:
             BaseScrapper: A new BaseScrapper instance with the page loaded.
         """
-        scrapper = BaseScrapper(url=additional_url)
+        scrapper = BaseScrapper(url=additional_url, requires_season=False)
         scrapper.page = BaseScrapper.request_url_page(scrapper)
         return scrapper
 
@@ -246,8 +245,6 @@ class BaseDataSetScrapper:
         page (ElementTree): The parsed XML representation of the web page.
     """
 
-    T = TypeVar("T")
-
     def __init__(self, cache_dir="cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
@@ -302,6 +299,16 @@ class BaseDataSetScrapper:
         desc="Scraping Progress",
         process_func=None,
     ) -> list:
+        """
+        Scrape and process all URLs in the list with rate limits.
+
+        Args:
+            urls (list): The list of URLs to scrape.
+            rate_limit (int, optional): The rate limit for requests in seconds. Defaults to 1.
+            return_html (bool, optional): Whether to return the HTML content as a string. Defaults to True.
+            desc (str, optional): The description for the progress bar. Defaults to "Scraping Progress".
+            process_func (Callable, optional): The function to process the results. Defaults to None.
+        """
         results = []
         with tqdm(total=len(urls), desc=desc) as pbar:
             for url in urls:
@@ -324,8 +331,10 @@ class BaseDataSetScrapper:
         Get a list of elements matching the given XPath.
 
         Args:
+            page (ElementTree): The parsed XML representation of the web page.
             xpath (str): The XPath query to execute.
             clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
@@ -355,6 +364,9 @@ class BaseDataSetScrapper:
             xpath (str): The XPath query to execute.
             clean (bool, optional): Whether to clean the text content of the elements. Defaults to True.
             add_str (str, optional): A string to add to the beginning of each element. Defaults to None.
+            desc (str, optional): The description for the progress bar. Defaults to None.
+            flatten (bool, optional): Whether to flatten the results into a single list. Defaults to True.
+            show_progress (bool, optional): Whether to show a progress bar. Defaults to True.
 
         Returns:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.

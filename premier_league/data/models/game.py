@@ -30,3 +30,30 @@ class Game(Base):
         Index("idx_game_season_week", "season", "match_week"),
         Index("idx_game_teams", "home_team_id", "away_team_id"),
     )
+
+    def to_dict(self, include_relationships=False):
+        result = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+        if result["date"]:
+            result["date"] = result["date"].isoformat()
+
+        if include_relationships:
+            if self.home_team:
+                result["home_team"] = {
+                    "id": self.home_team.id,
+                    "name": self.home_team.name,
+                }
+
+            if self.away_team:
+                result["away_team"] = {
+                    "id": self.away_team.id,
+                    "name": self.away_team.name,
+                }
+
+            if self.game_stats:
+                result["game_stats"] = [stat.to_dict() for stat in self.game_stats]
+
+            if self.league:
+                result["league"] = {"id": self.league.id, "name": self.league.name}
+
+        return result
