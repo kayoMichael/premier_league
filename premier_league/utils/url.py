@@ -16,7 +16,7 @@ class PredictorURL:
 
 
 class RANKING_URL:
-    BASEURLS = {
+    BASE_URLS = {
         "premier league": "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
         "la liga": "https://en.wikipedia.org/wiki/{SEASON}_La_Liga",
         "serie a": "https://en.wikipedia.org/wiki/{SEASON}_Serie_A",
@@ -25,10 +25,56 @@ class RANKING_URL:
     }
 
     @classmethod
-    def get(cls, season: str, league: str) -> str:
+    def get(cls, league: str) -> str:
         """Returns all formatted URLs for the given season."""
-        if league not in cls.BASEURLS:
+        if league not in cls.BASE_URLS:
             raise ValueError(
-                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASEURLS.keys())}"
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
             )
-        return cls.BASE_URLS[league].format(SEASON=season)
+        return cls.BASE_URLS[league]
+
+
+class PLAYERS_URL:
+    BASE_URLS = {
+        "premier league": "https://www.worldfootball.net/{type}/eng-premier-league-{SEASON}/",
+        "la liga": "https://www.worldfootball.net/{type}/esp-primera-division-{SEASON}/",
+        "serie a": "https://www.worldfootball.net/{type}/ita-serie-a-{SEASON}/",
+        "ligue 1": "https://www.worldfootball.net/{type}/fra-ligue-1-{SEASON}/",
+        "bundesliga": "https://www.worldfootball.net/{type}/bundesliga-{SEASON}/",
+    }
+    DATA_TYPE = {
+        "G": "scorer",
+        "A": "assists",
+    }
+
+    @classmethod
+    def get(cls, league: str, data_type: str) -> str:
+        """Returns all formatted URLs for the given season."""
+        if league not in cls.BASE_URLS:
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
+            )
+        elif data_type not in ["G", "A"]:
+            raise ValueError(
+                f"Type {data_type} not found. The Available Types are: G, A"
+            )
+        return cls.BASE_URLS[league].replace("{type}", cls.DATA_TYPE[data_type.upper()])
+
+
+class TRANSFERS_URL:
+    BASE_URLS = {
+        "premier league": "https://www.worldfootball.net/transfers/eng-premier-league-{SEASON}/",
+        "la liga": "https://www.worldfootball.net/transfers/esp-primera-division-{SEASON}/",
+        "serie a": "https://www.worldfootball.net/transfers/ita-serie-a-{SEASON}/",
+        "ligue 1": "https://www.worldfootball.net/transfers/fra-ligue-1-{SEASON}/",
+        "bundesliga": "https://www.worldfootball.net/transfers/bundesliga-{SEASON}/",
+    }
+
+    @classmethod
+    def get(cls, league: str) -> str:
+        """Returns all formatted URLs for the given season."""
+        if league not in cls.BASE_URLS:
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
+            )
+        return cls.BASE_URLS[league]

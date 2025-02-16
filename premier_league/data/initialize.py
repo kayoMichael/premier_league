@@ -1,31 +1,43 @@
+import pdb
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
-from .models.base import Base
 from .models.league import League
+from importlib.resources import files
+import appdirs
+import os
+import sqlite3
 
 
 def init_db(
-    db_path: str = "sqlite:///premier_league/data/premier_league.db",
+    db_filename: str = "premier_league.db", db_directory: str = "premier_league_sqlite"
 ) -> Session:
     """
-    Initialize the database and return a session.
-
+    Initialize the database and seed initial data
     Args:
-        db_path: SQLite database URL. Defaults to 'premier_league.db' in current directory.
-
+        db_filename: Name of the database file
+        db_directory: Name of the directory where the database file is stored
     Returns:
         SQLAlchemy session object
     """
-    engine = create_engine(db_path)
+    data_dir = appdirs.user_data_dir(db_directory)
+    os.makedirs(data_dir, exist_ok=True)
+    db_path = os.path.join(data_dir, db_filename)
 
-    Base.metadata.create_all(engine)
+    if not os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        sql_path = files("premier_league").joinpath("data/premier_league.sql")
+        with sql_path.open("r") as sql_file:
+            conn.executescript(sql_file.read())
+        conn.close()
 
+    engine = create_engine(f"sqlite:///{db_path}")
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = SessionLocal()
 
-    seed_initial_data(SessionLocal())
-
-    return SessionLocal()
+    seed_initial_data(session)
+    return session
 
 
 def seed_initial_data(session: Session):
@@ -34,7 +46,6 @@ def seed_initial_data(session: Session):
 
     Args:
         session: SQLAlchemy session object
-
     """
 
     all_current_league_names = [

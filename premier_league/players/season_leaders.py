@@ -1,5 +1,5 @@
 import re
-from typing import Literal
+from typing import Literal, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
@@ -12,12 +12,13 @@ from reportlab.platypus import Table, TableStyle
 
 from premier_league.base import BaseScrapper
 from ..utils.xpath import PLAYERS
+from ..utils.url import PLAYERS_URL
 from ..utils.methods import export_to_json, export_to_csv
 
 
 class PlayerSeasonLeaders(BaseScrapper):
     """
-    A class to scrape and process top player statistics (goals or assists) for a Premier League season.
+    A class to scrape and process top player statistics (goals or assists) for a season in Top 5 European League.
 
     This class inherits from BaseScrapper and provides methods to retrieve, process, and export
     player statistics in various formats (list, CSV, JSON, PDF).
@@ -26,22 +27,29 @@ class PlayerSeasonLeaders(BaseScrapper):
         stat_type (Literal['G', 'A']): The type of statistic to scrape ('G' for goals, 'A' for assists).
         stat_url (str): The URL to scrape data from.
         page: The scraped web page content.
-        season_top_players_list (list): Processed list of top players and their statistics.
+        _season_top_players_list (list): Processed list of top players and their statistics.
     """
 
-    def __init__(self, stat_type: Literal["G", "A"], target_season: str = None):
+    def __init__(
+        self,
+        stat_type: Literal["G", "A"],
+        target_season: Optional[str] = None,
+        league: Optional[str] = "premier league",
+    ):
         """
         Initialize the PlayerSeasonLeaders object.
 
         Args:
             stat_type (Literal['G', 'A']): The type of statistic to scrape ('G' for goals, 'A' for assists).
             target_season (str, optional): The specific season to scrape data for. Defaults to None.
+            league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
+        self.league = league
         self.stat_type = stat_type
         self.stat_url = self._get_url()
-        super().__init__(self.stat_url, target_season)
+        super().__init__(url=self.stat_url, target_season=target_season)
         self.page = self.request_url_page()
-        self.season_top_players_list = self._init_top_stats_table()
+        self._season_top_players_list = self._init_top_stats_table()
 
     def _get_url(self) -> str:
         """
@@ -50,10 +58,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         Returns:
             str: The URL to scrape data from.
         """
-        if self.stat_type == "G":
-            return "https://www.worldfootball.net/scorer/eng-premier-league-{SEASON}/"
-        else:
-            return "https://www.worldfootball.net/assists/eng-premier-league-{SEASON}/"
+        return PLAYERS_URL.get(self.league.lower(), self.stat_type)
 
     def _init_top_stats_table(self) -> list[list[str]]:
         """
@@ -103,7 +108,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         Returns:
             list: The season_top_players_list attribute.
         """
-        return self.season_top_players_list[: limit + 1 if limit else 100]
+        return self._season_top_players_list[: limit + 1 if limit else 100]
 
     def get_top_stats_csv(self, file_name: str, header: str = None, limit: int = None):
         """
@@ -151,7 +156,7 @@ class PlayerSeasonLeaders(BaseScrapper):
 
         # Create and style the table
         pdf.setFont("Arial", 12)
-        table = Table(self.season_top_players_list[:22])
+        table = Table(self._season_top_players_list[:22])
 
         table_styles = [
             ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),

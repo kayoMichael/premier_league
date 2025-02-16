@@ -16,6 +16,7 @@ def get_scorers():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         tuple: JSON response containing:
@@ -27,11 +28,12 @@ def get_scorers():
     """
     season = request.args.get("season")
     limit = request.args.get("limit")
+    league = request.args.get("league")
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
     response = PlayerService().get_player_data_goals(
-        season=season, limit=int(limit) if limit else None
+        season=season, limit=int(limit) if limit else None, league=league
     )
     return jsonify(response[0]), response[1]
 
@@ -45,6 +47,7 @@ def get_assists():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         tuple: JSON response containing:
@@ -56,11 +59,12 @@ def get_assists():
     """
     season = request.args.get("season")
     limit = request.args.get("limit")
+    league = request.args.get("league")
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
 
     response = PlayerService().get_player_data_assists(
-        season=season, limit=int(limit) if limit else None
+        season=season, limit=int(limit) if limit else None, league=league
     )
     return jsonify(response[0]), response[1]
 
@@ -77,6 +81,7 @@ def get_scorers_csv():
         filename (str, required): Name for the exported file (without extension)
         header (str, optional): Include header row in CSV if provided
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: CSV file download response
@@ -90,6 +95,7 @@ def get_scorers_csv():
     file_name = request.args.get("filename")
     header = request.args.get("header")
     limit = request.args.get("limit")
+    league = request.args.get("league")
 
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
@@ -99,7 +105,7 @@ def get_scorers_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_goals_csv(
-        safe_filename, season=season, header=header, limit=int(limit)
+        safe_filename, season=season, header=header, limit=int(limit), league=league
     )
     g.temp_state["file_path"] = response[0]
 
@@ -127,6 +133,7 @@ def get_assists_csv():
         filename (str, required): Name for the exported file (without extension)
         header (str, optional): Include header row in CSV if provided
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: CSV file download response
@@ -140,6 +147,7 @@ def get_assists_csv():
     file_name = request.args.get("filename")
     header = request.args.get("header")
     limit = request.args.get("limit")
+    league = request.args.get("league")
 
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
@@ -149,7 +157,11 @@ def get_assists_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_assists_csv(
-        safe_filename, season=season, header=header, limit=int(limit) if limit else None
+        safe_filename,
+        season=season,
+        header=header,
+        limit=int(limit) if limit else None,
+        league=league,
     )
     g.temp_state["file_path"] = response[0]
 
@@ -177,6 +189,7 @@ def get_scorers_json():
         filename (str, required): Name for the exported file (without extension)
         header (str, optional): Include metadata in JSON if provided
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: JSON file download response
@@ -190,6 +203,7 @@ def get_scorers_json():
     file_name = request.args.get("filename")
     header = request.args.get("header")
     limit = request.args.get("limit")
+    league = request.args.get("league")
 
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
@@ -201,7 +215,7 @@ def get_scorers_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_goals_json(
-        safe_filename, season=season, header=header, limit=limit
+        safe_filename, season=season, header=header, limit=limit, league=league
     )
     g.temp_state["file_path"] = response[0]
 
@@ -229,6 +243,7 @@ def get_assists_json():
         filename (str, required): Name for the exported file (without extension)
         header (str, optional): Include metadata in JSON if provided
         limit (int, optional): Maximum number of results to return
+        league (str, optional): Filter results by league (e.g., 'Premier league
 
     Returns:
         file: JSON file download response
@@ -242,6 +257,7 @@ def get_assists_json():
     file_name = request.args.get("filename")
     header = request.args.get("header")
     limit = request.args.get("limit")
+    league = request.args.get("league")
 
     if limit and not limit.isdigit():
         return {"error": "Limit must be a number"}, 400
@@ -251,7 +267,11 @@ def get_assists_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_assists_json(
-        safe_filename, season=season, header=header, limit=int(limit) if limit else None
+        safe_filename,
+        season=season,
+        header=header,
+        limit=int(limit) if limit else None,
+        league=league,
     )
     g.temp_state["file_path"] = response[0]
 

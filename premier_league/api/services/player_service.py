@@ -4,9 +4,11 @@ import os
 
 class PlayerService:
     @staticmethod
-    def get_player_data_goals(season: str = None, limit: int = None):
+    def get_player_data_goals(
+        season: str = None, limit: int = None, league: str = None
+    ):
         try:
-            player_data = PlayerSeasonLeaders("G", season).get_top_stats_list(
+            player_data = PlayerSeasonLeaders("G", season, league).get_top_stats_list(
                 limit=limit
             )
         except ValueError as e:
@@ -15,9 +17,11 @@ class PlayerService:
         return player_data, 200
 
     @staticmethod
-    def get_player_data_assists(season: str = None, limit: int = None):
+    def get_player_data_assists(
+        season: str = None, limit: int = None, league: str = None
+    ):
         try:
-            player_data = PlayerSeasonLeaders("A", season).get_top_stats_list(
+            player_data = PlayerSeasonLeaders("A", season, league).get_top_stats_list(
                 limit=limit
             )
         except ValueError as e:
@@ -27,10 +31,16 @@ class PlayerService:
 
     @staticmethod
     def get_player_data_goals_csv(
-        file_name: str, season: str = None, header: str = None, limit: int = None
+        file_name: str,
+        season: str = None,
+        header: str = None,
+        limit: int = None,
+        league: str = None,
     ):
         try:
-            PlayerSeasonLeaders("G", season).get_top_stats_csv(file_name, header, limit)
+            PlayerSeasonLeaders("G", season, league).get_top_stats_csv(
+                file_name, header, limit
+            )
         except ValueError as e:
             return {"error": str(e)}, 400
 
@@ -42,10 +52,16 @@ class PlayerService:
 
     @staticmethod
     def get_player_data_assists_csv(
-        file_name: str, season: str = None, header: str = None, limit: int = None
+        file_name: str,
+        season: str = None,
+        header: str = None,
+        limit: int = None,
+        league: str = None,
     ):
         try:
-            PlayerSeasonLeaders("A", season).get_top_stats_csv(file_name, header, limit)
+            PlayerSeasonLeaders("A", season, league).get_top_stats_csv(
+                file_name, header, limit
+            )
         except ValueError as e:
             return {"error": str(e)}, 400
 
@@ -57,10 +73,14 @@ class PlayerService:
 
     @staticmethod
     def get_player_data_goals_json(
-        file_name: str, season: str = None, header: str = None, limit: int = None
+        file_name: str,
+        season: str = None,
+        header: str = None,
+        limit: int = None,
+        league: str = None,
     ):
         try:
-            PlayerSeasonLeaders("G", season).get_top_stats_json(
+            PlayerSeasonLeaders("G", season, league).get_top_stats_json(
                 file_name, header, limit
             )
         except ValueError as e:
@@ -74,10 +94,14 @@ class PlayerService:
 
     @staticmethod
     def get_player_data_assists_json(
-        file_name: str, season: str = None, header: str = None, limit: int = None
+        file_name: str,
+        season: str = None,
+        header: str = None,
+        limit: int = None,
+        league: str = None,
     ):
         try:
-            PlayerSeasonLeaders("A", season).get_top_stats_json(
+            PlayerSeasonLeaders("A", season, league).get_top_stats_json(
                 file_name, header, limit
             )
         except ValueError as e:

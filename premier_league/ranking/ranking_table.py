@@ -1,4 +1,5 @@
 import os
+
 from premier_league.base import BaseScrapper
 import re
 from reportlab.pdfgen import canvas
@@ -36,8 +37,8 @@ class RankingTable(BaseScrapper):
 
     def __init__(
         self,
-        target_season: Optional[str] = None,
         league: Optional[str] = "Premier League",
+        target_season: Optional[str] = None,
     ):
         """
         Initialize the RankingTable instance.
@@ -48,7 +49,7 @@ class RankingTable(BaseScrapper):
             league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
         super().__init__(
-            RANKING_URL.get(season=target_season, league=league.lower()),
+            RANKING_URL.get(league=league.lower()),
             target_season=target_season,
         )
         self.page = self.request_url_page()
@@ -62,6 +63,7 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
+
         ranking_rows = remove_qualification_relegation_and_css(
             self.get_list_by_xpath(RANKING.CURRENT_RANKING)
         )
@@ -135,8 +137,7 @@ class RankingTable(BaseScrapper):
 
         pdf.setFont("Arial", 12)
         table = Table(self.ranking_list)
-
-        if int(self.season[:4]) > 2019 and self.league == "Premier League":
+        if int(self.season[:4]) >= 2021 and self.league == "Premier League":
             european_spots = self._find_european_qualification_spot()
         else:
             european_spots = self._scrap_european_qualification_spot()
@@ -325,7 +326,6 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
-        possible_european_spot = []
         if int(self.season[:4]) == 1997:
             possible_european_spot = [
                 "UEFA Cup",
@@ -349,7 +349,6 @@ class RankingTable(BaseScrapper):
                 "Europa League",
                 "Europa Conference League",
             ]
-
         qualified = {}
         for tournament in possible_european_spot:
             qualified_teams = []

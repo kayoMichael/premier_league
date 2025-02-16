@@ -15,6 +15,7 @@ def get_standings():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         header (str, optional): Include additional metadata in response if provided
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         tuple: JSON response containing:
@@ -23,7 +24,10 @@ def get_standings():
     """
     season = request.args.get("season")
     header = request.args.get("header")
-    response = RankingService().get_premier_league_ranking(season=season, header=header)
+    league = request.args.get("league")
+    response = RankingService().get_premier_league_ranking(
+        season=season, header=header, league=league
+    )
     return jsonify(response[0]), response[1]
 
 
@@ -35,6 +39,7 @@ def get_standings_table():
 
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         tuple: JSON response containing:
@@ -42,7 +47,8 @@ def get_standings_table():
             - int: HTTP status code
     """
     season = request.args.get("season")
-    response = RankingService().get_premier_league_ranking_list(season)
+    league = request.args.get("league")
+    response = RankingService().get_premier_league_ranking_list(season, league)
     return jsonify(response[0]), response[1]
 
 
@@ -56,6 +62,7 @@ def get_standings_csv():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         filename (str, required): Name for the exported file (without extension)
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: CSV file download response
@@ -67,12 +74,15 @@ def get_standings_csv():
         g.temp_state = {}
     season = request.args.get("season")
     file_name = request.args.get("filename")
+    league = request.args.get("league")
     if file_name is None:
         return {"error": "Missing filename parameter"}, 400
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_csv(safe_filename, season)
+    response = RankingService().get_premier_league_ranking_csv(
+        safe_filename, season, league
+    )
     g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
@@ -96,6 +106,7 @@ def get_standings_json():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         filename (str, required): Name for the exported file (without extension)
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: JSON file download response
@@ -106,13 +117,16 @@ def get_standings_json():
     if not hasattr(g, "temp_state"):
         g.temp_state = {}
     season = request.args.get("season")
+    league = request.args.get("league")
     file_name = request.args.get("filename")
     if file_name is None:
         return {"error": "Missing filename parameter"}, 400
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_json(safe_filename, season)
+    response = RankingService().get_premier_league_ranking_json(
+        safe_filename, season, league
+    )
     g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:
@@ -137,6 +151,7 @@ def get_standings_pdf():
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
         filename (str, required): Name for the exported file (without extension)
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         file: PDF file download response
@@ -147,13 +162,16 @@ def get_standings_pdf():
     if not hasattr(g, "temp_state"):
         g.temp_state = {}
     season = request.args.get("season")
+    league = request.args.get("league")
     file_name = request.args.get("filename")
     if file_name is None:
         return {"error": "Missing filename parameter"}, 400
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_pdf(safe_filename, season)
+    response = RankingService().get_premier_league_ranking_pdf(
+        safe_filename, season, league
+    )
     g.temp_state["file_path"] = response[0]
 
     if response[1] == 200:

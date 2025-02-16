@@ -9,3 +9,6 @@ dist/
 .DS_Store
 cache/
 main.py
+*.db
+.eggs/
+test/
