@@ -182,19 +182,17 @@ class MatchStatistics(BaseDataSetScrapper):
         if not team:
             raise ValueError(f"No team found with name: {team_name}")
 
-        games = self.session.query(Game).join(
-            Team,
-            or_(
-                Game.home_team_id == Team.id,
-                Game.away_team_id == Team.id
+        games = (
+            self.session.query(Game)
+            .join(Team, or_(Game.home_team_id == Team.id, Game.away_team_id == Team.id))
+            .filter(Team.name == team_name)
+            .options(
+                joinedload(Game.home_team),
+                joinedload(Game.away_team),
+                joinedload(Game.game_stats),
             )
-        ).filter(
-            Team.name == team_name
-        ).options(
-            joinedload(Game.home_team),
-            joinedload(Game.away_team),
-            joinedload(Game.game_stats)
-        ).all()
+            .all()
+        )
 
         return [game.to_dict(include_relationships=True) for game in games]
 
@@ -213,15 +211,21 @@ class MatchStatistics(BaseDataSetScrapper):
             raise ValueError(
                 "Invalid format for target_season. Please use 'YYYY-YYYY' (e.g., '2024-2025') with a regular hyphen."
             )
-        games = self.session.query(Game) \
-                .filter_by(season=season, match_week=match_week) \
-                .all()
+        games = (
+            self.session.query(Game)
+            .filter_by(season=season, match_week=match_week)
+            .all()
+        )
 
         if not games:
-            raise ValueError(f"No games found for season: {season} and match week: {match_week}")
+            raise ValueError(
+                f"No games found for season: {season} and match week: {match_week}"
+            )
         return [game.to_dict(include_relationships=True) for game in games]
 
-    def get_games_before_date(self, date: datetime, limit: int = 10, team: Optional[str] = None):
+    def get_games_before_date(
+        self, date: datetime, limit: int = 10, team: Optional[str] = None
+    ):
         """
         Retrieve games before a specific date with a limit. For a specific Team
 
@@ -233,8 +237,7 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             List[Game]: A list of Game objects before the given date, ordered by date descending.
         """
-        query = self.session.query(Game) \
-            .filter(Game.date < date)
+        query = self.session.query(Game).filter(Game.date < date)
 
         if team:
             team_id = self.session.query(Team.id).filter_by(name=team).scalar()
@@ -244,13 +247,13 @@ class MatchStatistics(BaseDataSetScrapper):
                 (Game.home_team_id == team_id) | (Game.away_team_id == team_id)
             )
 
-        games = query.order_by(Game.date.desc()) \
-                .limit(limit) \
-                .all()
+        games = query.order_by(Game.date.desc()).limit(limit).all()
 
         return [game.to_dict(include_relationships=True) for game in games]
 
-    def get_game_stats_before_date(self, date: datetime, limit: int = 10, team: Optional[str] = None) -> List[dict]:
+    def get_game_stats_before_date(
+        self, date: datetime, limit: int = 10, team: Optional[str] = None
+    ) -> List[dict]:
         """
         Retrieve game statistics before a specific date with a limit. For a specific Team
 
@@ -270,7 +273,9 @@ class MatchStatistics(BaseDataSetScrapper):
         if team:
             team_alias = aliased(Team)
             query = query.filter(
-                exists().where((team_alias.id == GameStats.team_id) & (team_alias.name == team))
+                exists().where(
+                    (team_alias.id == GameStats.team_id) & (team_alias.name == team)
+                )
             )
 
         stats = query.order_by(Game.date.desc()).limit(limit).all()

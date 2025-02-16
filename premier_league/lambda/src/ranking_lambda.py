@@ -6,8 +6,11 @@ from utils.methods import (
     save_to_s3,
 )
 
+
 class RankingLambda(RankingTable):
-    def __init__(self, path, season, filename, header, s3_name: None = "premier-league-data"):
+    def __init__(
+        self, path, season, filename, header, s3_name: None = "premier-league-data"
+    ):
         super().__init__(season)
         self.filename = filename
         self.path = path
@@ -20,18 +23,14 @@ class RankingLambda(RankingTable):
         elif self.path == "/ranking_csv":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
-            export_to_csv(
-                self.filename, self.get_ranking_list(), header=self.header
-            )
+            export_to_csv(self.filename, self.get_ranking_list(), header=self.header)
             return generate_http_response(
                 200, save_to_s3(f"{self.filename}.csv", self.s3_name)
             )
         elif self.path == "/ranking_json":
             if self.filename is None:
                 return generate_http_response(400, "Filename is required")
-            export_to_json(
-                self.filename, self.get_ranking_list(), header_1=self.header
-            )
+            export_to_json(self.filename, self.get_ranking_list(), header_1=self.header)
             return generate_http_response(
                 200, save_to_s3(f"{self.filename}.json", self.s3_name)
             )

@@ -8,7 +8,15 @@ from utils.methods import (
 
 
 class HandleLambdaRequest(Transfers):
-    def __init__(self, path, team, season=None, filename=None, export_type=None, s3_name="premier-league-data"):
+    def __init__(
+        self,
+        path,
+        team,
+        season=None,
+        filename=None,
+        export_type=None,
+        s3_name="premier-league-data",
+    ):
         super().__init__(target_season=season)
         self.path = path
         self.target_team = team

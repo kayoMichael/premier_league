@@ -9,7 +9,14 @@ from utils.methods import (
 
 class PlayerLambda(PlayerSeasonLeaders):
     def __init__(
-        self, path, stat_type, season=None, filename=None, limit=None, header=None, s3_name="premier-league-data"
+        self,
+        path,
+        stat_type,
+        season=None,
+        filename=None,
+        limit=None,
+        header=None,
+        s3_name="premier-league-data",
     ):
         super().__init__(stat_type, season)
         self.filename = filename

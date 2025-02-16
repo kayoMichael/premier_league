@@ -10,7 +10,9 @@ import os
 import sqlite3
 
 
-def init_db(db_filename: str = "premier_league.db", db_directory: str = "premier_league_sqlite") -> Session:
+def init_db(
+    db_filename: str = "premier_league.db", db_directory: str = "premier_league_sqlite"
+) -> Session:
     """
     Initialize the database and seed initial data
     Args:
@@ -25,7 +27,7 @@ def init_db(db_filename: str = "premier_league.db", db_directory: str = "premier
 
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
-        sql_path = files('premier_league').joinpath('data/premier_league.sql')
+        sql_path = files("premier_league").joinpath("data/premier_league.sql")
         with sql_path.open("r") as sql_file:
             conn.executescript(sql_file.read())
         conn.close()

@@ -22,7 +22,7 @@ setup(
         "appdirs==1.4.4",
         "SQLAlchemy==2.0.38",
         "pandas==2.2.3",
-        "tqdm==4.67.1"
+        "tqdm==4.67.1",
     ],
     include_package_data=True,
     python_requires=">=3.11",
