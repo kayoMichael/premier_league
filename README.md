@@ -1,10 +1,25 @@
 # Premier League Data Tool
 
 ### Python Package
-premier_league Package scraps data from various sites to provide useful information about the Premier League.
+premier_league Package scraps data from various sites to provide useful information for the Top 5 European Leagues. This includes Advanced Game Statistics for ML training, Rankings with European Qualifications, Transfers and Season Statistical Leaders for a given season. It also includes methods to expose the information rapidly as an API via Flask or AWS Lambda
+
+
+## Features
+
+📊 [Match Statistics](#matchstatistics)
+
+📊 [Ranking Table](#rankingtable)
+
+📊 [Player Leaders](#playerseasonleaders)
+
+📊 [Transfers](#transfers)
+
+📊 [Flask API Docs](#flask-api-docs)
+
 
 ## Deployments
-There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda_function directories. 
+
+
 ## Running the Flask API
 
 
@@ -28,19 +43,6 @@ npm install -g serverless-python-requirements
 python -m premier_league.lamdba_functions.deploy --aws-profile ${aws profile} --region ${region}
 ```
 
-
-
-## Features
-
-📊 [Match Statistics](#matchstatistics)
-
-📊 [Ranking Table](#rankingtable)
-
-📊 [Player Leaders](#playerseasonleaders)
-
-📊 [Transfers](#transfers)
-
-📊 [Flask API Docs](#flask-api-docs)
 
 # MatchStatistics
 
