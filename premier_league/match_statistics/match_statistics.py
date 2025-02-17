@@ -45,7 +45,7 @@ class MatchStatistics(BaseDataSetScrapper):
             .all()
         )
 
-    def create_dataset(self, output_path: str):
+    def create_dataset(self, output_path: str, rows_count: int = None):
         """
         Create a CSV file containing game statistics for machine learning training. Currently max of 17520 Data Rows.
 
@@ -54,19 +54,27 @@ class MatchStatistics(BaseDataSetScrapper):
 
         Args:
             output_path (str): The file path where the CSV file will be saved.
-
+            rows_count (int, optional): The maximum number of rows to include in the dataset. Defaults to None. if given gets the last n rows. after sorting by date.
         Returns:
             None
         """
-        games = (
+        if(rows_count is not None and type(rows_count) != int):
+            raise ValueError("rows_count must be an integer")
+        if(rows_count is not None and rows_count < 0):
+            raise ValueError("rows_count must be a positive integer")
+
+        query = (
             self.session.query(Game)
             .options(
                 joinedload(Game.game_stats),
                 joinedload(Game.home_team),
                 joinedload(Game.away_team),
             )
-            .all()
         )
+        if rows_count is not None:
+            query = query.order_by(Game.date.desc()).limit(rows_count)
+
+        games = query.all()
 
         game_data = []
 
