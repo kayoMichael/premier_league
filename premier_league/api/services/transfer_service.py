@@ -1,14 +1,12 @@
 import os
 from typing import Literal
 
-from premier_league import Transfers
-from premier_league.transfers.transfers import TeamNotFoundError
-
 
 class TransferService:
 
     @staticmethod
     def get_all_current_teams(season: str = None, league: str = None):
+        from premier_league import Transfers
         try:
             all_teams = Transfers(season, league).get_all_current_teams()
         except ValueError as e:
@@ -18,6 +16,7 @@ class TransferService:
 
     @staticmethod
     def get_transfer_in_data(team: str, season: str = None, league: str = None):
+        from premier_league import Transfers
         try:
             transfer_data = Transfers(season, league).transfer_in_table(team)
         except ValueError as e:
@@ -27,6 +26,8 @@ class TransferService:
 
     @staticmethod
     def get_transfer_out_data(team: str, season: str = None, league: str = None):
+        from premier_league import Transfers
+        from premier_league.transfers.transfers import TeamNotFoundError
         try:
             transfer_data = Transfers(season, league).transfer_out_table(team)
         except TeamNotFoundError:
@@ -44,6 +45,8 @@ class TransferService:
         season: str = None,
         league: str = None,
     ):
+        from premier_league import Transfers
+        from premier_league.transfers.transfers import TeamNotFoundError
         try:
             Transfers(season, league).transfer_csv(team, file_name, transfer_type)
         except TeamNotFoundError:
@@ -65,6 +68,8 @@ class TransferService:
         season: str = None,
         league: str = None,
     ):
+        from premier_league import Transfers
+        from premier_league.transfers.transfers import TeamNotFoundError
         try:
             Transfers(season, league).transfer_json(team, file_name, transfer_type)
         except TeamNotFoundError:

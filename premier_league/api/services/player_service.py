@@ -1,13 +1,12 @@
 import os
 
-from premier_league import PlayerSeasonLeaders
-
 
 class PlayerService:
     @staticmethod
     def get_player_data_goals(
         season: str = None, limit: int = None, league: str = None
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             player_data = PlayerSeasonLeaders("G", season, league).get_top_stats_list(
                 limit=limit
@@ -21,6 +20,7 @@ class PlayerService:
     def get_player_data_assists(
         season: str = None, limit: int = None, league: str = None
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             player_data = PlayerSeasonLeaders("A", season, league).get_top_stats_list(
                 limit=limit
@@ -38,6 +38,7 @@ class PlayerService:
         limit: int = None,
         league: str = None,
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             PlayerSeasonLeaders("G", season, league).get_top_stats_csv(
                 file_name, header, limit
@@ -59,6 +60,7 @@ class PlayerService:
         limit: int = None,
         league: str = None,
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             PlayerSeasonLeaders("A", season, league).get_top_stats_csv(
                 file_name, header, limit
@@ -80,6 +82,7 @@ class PlayerService:
         limit: int = None,
         league: str = None,
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             PlayerSeasonLeaders("G", season, league).get_top_stats_json(
                 file_name, header, limit
@@ -101,6 +104,7 @@ class PlayerService:
         limit: int = None,
         league: str = None,
     ):
+        from premier_league import PlayerSeasonLeaders
         try:
             PlayerSeasonLeaders("A", season, league).get_top_stats_json(
                 file_name, header, limit
