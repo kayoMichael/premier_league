@@ -185,6 +185,15 @@ class MatchStatistics(BaseDataSetScrapper):
         """
         return [team.name for team in self.session.query(Team.name).all()]
 
+    def get_total_game_count(self):
+        """
+        Retrieve the total number of games in the database.
+
+        Returns:
+            int: The total number of games in the database.
+        """
+        return self.session.query(Game).count()
+
     def get_team_games(self, team_name: str) -> List[Type[Game]]:
         """
         Retrieve all games for a specific team.
