@@ -13,3 +13,4 @@ main.py
 .eggs/
 test/
 manual_test/
+prem_cache.sqlite

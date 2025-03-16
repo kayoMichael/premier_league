@@ -48,7 +48,7 @@ def runner(app):
 
 
 @pytest.fixture
-def mock_player_data():
+def mock_player_goals_data():
     """Sample player data for testing."""
     return [
     {
@@ -80,6 +80,31 @@ def mock_player_data():
         "Name": "Alexandre Lacazette"
     }
 ]
+
+@pytest.fixture
+def mock_player_assists_data():
+    """Sample player assist data for testing."""
+    return [
+        {
+            "Assists": "8",
+            "Club": "Olympique Marseille",
+            "Country": "Gabon",
+            "Name": "Pierre-Emerick Aubameyang"
+        },
+        {
+            "Assists": "8",
+            "Club": "Stade Brestois 29",
+            "Country": "France",
+            "Name": "Romain Del Castillo"
+        },
+        {
+            "Assists": "8",
+            "Club": "Paris Saint-Germain",
+            "Country": "France",
+            "Name": "Ousmane Dembélé"
+        },
+    ]
+
 
 
 @pytest.fixture

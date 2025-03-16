@@ -1,90 +1,82 @@
 import os
 from unittest.mock import patch, MagicMock
 
-from premier_league.api.services.transfer_service import TransferService
+from premier_league.api.services.player_service import PlayerService
 
 
-class TestTransferService:
-    """Tests for the TransferService class."""
+class TestPlayerService:
+    """Tests for the PlayerService class."""
 
-    @patch("premier_league.Transfers")
-    def test_get_all_current_teams_success(self, mock_transfers_class):
-        """Test successful retrieval of all teams."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.get_all_current_teams.return_value = [
-            "Arsenal FC", "Chelsea FC", "Liverpool FC"
-        ]
-        result, status_code = TransferService.get_all_current_teams(league="Premier League", season="2022-2023")
+    @patch("premier_league.api.services.player_service.export_to_dict")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_success(self, mock_player_leaders_class, mock_export_to_dict,
+                                           mock_player_goals_data):
+        """Test successful retrieval of goal scoring data."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_data = MagicMock()
+        mock_player_leaders_instance.get_top_stats_list.return_value = mock_player_data
+
+        mock_export_to_dict.return_value = mock_player_goals_data
+
+        result, status_code = PlayerService.get_player_data_goals(
+            league="Premier League",
+            season="2022-2023",
+            limit=10
+        )
 
         assert status_code == 200
-        assert len(result) == 3
-        assert result[0] == "Arsenal FC"
+        assert result == mock_player_goals_data
 
-        mock_transfers_class.assert_called_once_with("2022-2023", "Premier League")
-        mock_transfers_instance.get_all_current_teams.assert_called_once()
+        mock_player_leaders_class.assert_called_once_with("G", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_list.assert_called_once_with(limit=10)
+        mock_export_to_dict.assert_called_once_with(mock_player_data)
 
-    @patch("premier_league.Transfers")
-    def test_get_all_current_teams_error(self, mock_transfers_class):
-        """Test error handling when retrieving all teams."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.get_all_current_teams.side_effect = ValueError("Invalid league")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_error(self, mock_player_leaders_class):
+        """Test error handling when retrieving goal scoring data."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_list.side_effect = ValueError("Invalid league")
 
-        # Call service method
-        result, status_code = TransferService.get_all_current_teams(league="Invalid League")
+        result, status_code = PlayerService.get_player_data_goals(
+            league="Invalid League",
+            season="2022-2023"
+        )
 
-        # Assert results
         assert status_code == 400
         assert "error" in result
         assert result["error"] == "Invalid league"
 
-    @patch("premier_league.api.services.transfer_service.export_to_dict")
-    @patch("premier_league.Transfers")
-    def test_get_transfer_in_data_success(self, mock_transfers_class, mock_export_to_dict):
-        """Test successful retrieval of transfer-in data."""
-        # Setup mocks
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfer_data = MagicMock()
-        mock_transfers_instance.transfer_in_table.return_value = mock_transfer_data
+    @patch("premier_league.api.services.player_service.export_to_dict")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_success(self, mock_player_leaders_class, mock_export_to_dict,
+                                             mock_player_assists_data):
+        """Test successful retrieval of assist data."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_data = MagicMock()
+        mock_player_leaders_instance.get_top_stats_list.return_value = mock_player_data
 
-        mock_export_to_dict.return_value = [
-            {
-                "Club": "São Paulo FC",
-                "Date": "01/24",
-                "Name": "Lucas Beraldo",
-                "Position": "DF"
-            },
-            {
-                "Club": "Eintracht Frankfurt",
-                "Date": "09/23",
-                "Name": "Randal Kolo Muani",
-                "Position": "FW"
-            }
-        ]
+        mock_export_to_dict.return_value = mock_player_assists_data
 
-        # Call service method
-        result, status_code = TransferService.get_transfer_in_data(
-            team="Arsenal",
+        result, status_code = PlayerService.get_player_data_assists(
             league="Premier League",
-            season="2022-2023"
+            season="2022-2023",
+            limit=5
         )
 
         assert status_code == 200
-        assert len(result) == 2
-        assert result[0]["Name"] == "Lucas Beraldo"
+        assert result == mock_player_assists_data
 
-        mock_transfers_class.assert_called_once_with("2022-2023", "Premier League")
-        mock_transfers_instance.transfer_in_table.assert_called_once_with("Arsenal")
-        mock_export_to_dict.assert_called_once_with(mock_transfer_data)
+        mock_player_leaders_class.assert_called_once_with("A", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_list.assert_called_once_with(limit=5)
+        mock_export_to_dict.assert_called_once_with(mock_player_data)
 
-    @patch("premier_league.Transfers")
-    def test_get_transfer_in_data_value_error(self, mock_transfers_class):
-        """Test handling ValueError in get_transfer_in_data."""
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_error(self, mock_player_leaders_class):
+        """Test error handling when retrieving assist data."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_list.side_effect = ValueError("Invalid season")
 
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.transfer_in_table.side_effect = ValueError("Invalid season")
-
-        result, status_code = TransferService.get_transfer_in_data(
-            team="Arsenal",
+        result, status_code = PlayerService.get_player_data_assists(
             league="Premier League",
             season="Invalid"
         )
@@ -93,146 +85,166 @@ class TestTransferService:
         assert "error" in result
         assert result["error"] == "Invalid season"
 
-    @patch("premier_league.Transfers")
-    @patch("premier_league.TeamNotFoundError", Exception)
-    def test_get_transfer_in_data_team_not_found(self, mock_transfers_class):
-        """Test handling TeamNotFoundError in get_transfer_in_data."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.transfer_in_table.side_effect = Exception(
-            "Team not found")
+    @patch("os.path.join")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_csv_success(self, mock_player_leaders_class, mock_path_join):
+        """Test successful generation of goals CSV file."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_path_join.return_value = "/path/to/files/top_scorers.csv"
 
-        result, status_code = TransferService.get_transfer_in_data(
-            team="NonexistentTeam",
+        result, status_code = PlayerService.get_player_data_goals_csv(
+            file_name="top_scorers",
             league="Premier League",
-            season="2022-2023"
-        )
-
-        assert status_code == 404
-        assert "error" in result
-        assert "No Team by the name of NonexistentTeam exists" in result["error"]
-
-    @patch("premier_league.api.services.transfer_service.export_to_dict")
-    @patch("premier_league.Transfers")
-    def test_get_transfer_out_data_success(self, mock_transfers_class, mock_export_to_dict):
-        """Test successful retrieval of transfer-out data."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfer_data = MagicMock()
-        mock_transfers_instance.transfer_out_table.return_value = mock_transfer_data
-
-        mock_export_to_dict.return_value = [
-            {"player": "Folarin Balogun", "from": "Arsenal", "to": "Monaco"}
-        ]
-
-        result, status_code = TransferService.get_transfer_out_data(
-            team="Arsenal",
-            league="Premier League",
-            season="2022-2023"
+            season="2022-2023",
+            header="Top Scorers",
+            limit=10
         )
 
         assert status_code == 200
-        assert len(result) == 1
-        assert result[0]["player"] == "Folarin Balogun"
+        assert result == "/path/to/files/top_scorers.csv"
 
-        mock_transfers_class.assert_called_once_with("2022-2023", "Premier League")
-        mock_transfers_instance.transfer_out_table.assert_called_once_with("Arsenal")
-        mock_export_to_dict.assert_called_once_with(mock_transfer_data)
+        mock_player_leaders_class.assert_called_once_with("G", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_csv.assert_called_once_with("top_scorers", "Top Scorers", 10)
+        mock_path_join.assert_called_once_with(os.getcwd(), "files", "top_scorers.csv")
 
-    @patch("premier_league.transfers.transfers.TeamNotFoundError", Exception)
-    @patch("premier_league.Transfers")
-    def test_get_transfer_out_data_team_not_found(self, mock_transfers_class):
-        """Test handling TeamNotFoundError in get_transfer_out_data."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.transfer_out_table.side_effect = Exception(
-            "Team not found")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_csv_error(self, mock_player_leaders_class):
+        """Test error handling when generating goals CSV file."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_csv.side_effect = ValueError("Invalid league")
 
-        result, status_code = TransferService.get_transfer_out_data(
-            team="NonexistentTeam",
-            league="Premier League",
+        result, status_code = PlayerService.get_player_data_goals_csv(
+            file_name="top_scorers",
+            league="Invalid League",
             season="2022-2023"
         )
 
-        assert status_code == 404
+        assert status_code == 400
         assert "error" in result
-        assert "No Team by the name of NonexistentTeam exists" in result["error"]
+        assert result["error"] == "Invalid league"
 
     @patch("os.path.join")
-    @patch("premier_league.Transfers")
-    def test_transfer_csv_success(self, mock_transfers_class, mock_path_join):
-        """Test successful generation of CSV file."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_path_join.return_value = "/path/to/files/transfers.csv"
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_csv_success(self, mock_player_leaders_class, mock_path_join):
+        """Test successful generation of assists CSV file."""
+        # Setup mocks
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_path_join.return_value = "/path/to/files/top_assists.csv"
 
-        result, status_code = TransferService.transfer_csv(
-            team="Arsenal",
-            file_name="transfers",
-            transfer_type="both",
+        # Call service method
+        result, status_code = PlayerService.get_player_data_assists_csv(
+            file_name="top_assists",
             league="Premier League",
-            season="2022-2023"
+            season="2022-2023",
+            header="Top Playmakers",
+            limit=10
         )
 
+        # Assert results
         assert status_code == 200
-        assert result == "/path/to/files/transfers.csv"
+        assert result == "/path/to/files/top_assists.csv"
 
-        mock_transfers_class.assert_called_once_with("2022-2023", "Premier League")
-        mock_transfers_instance.transfer_csv.assert_called_once_with("Arsenal", "transfers", "both")
-        mock_path_join.assert_called_once_with(os.getcwd(), "files", "transfers.csv")
+        # Verify mocks were called with correct parameters
+        mock_player_leaders_class.assert_called_once_with("A", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_csv.assert_called_once_with("top_assists", "Top Playmakers", 10)
+        mock_path_join.assert_called_once_with(os.getcwd(), "files", "top_assists.csv")
 
-    @patch("premier_league.transfers.transfers.TeamNotFoundError", Exception)
-    @patch("premier_league.Transfers")
-    def test_transfer_csv_team_not_found(self, mock_transfers_class):
-        """Test handling TeamNotFoundError in transfer_csv."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.transfer_csv.side_effect = Exception("Team not found")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_csv_error(self, mock_player_leaders_class):
+        """Test error handling when generating assists CSV file."""
+        # Setup mock to raise ValueError
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_csv.side_effect = ValueError("Invalid league")
 
-        result, status_code = TransferService.transfer_csv(
-            team="NonexistentTeam",
-            file_name="transfers",
-            transfer_type="in",
-            league="Premier League",
+        # Call service method
+        result, status_code = PlayerService.get_player_data_assists_csv(
+            file_name="top_assists",
+            league="Invalid League",
             season="2022-2023"
         )
 
-        assert status_code == 404
+        # Assert results
+        assert status_code == 400
         assert "error" in result
-        assert "No Team by the name of NonexistentTeam exists" in result["error"]
+        assert result["error"] == "Invalid league"
 
     @patch("os.path.join")
-    @patch("premier_league.Transfers")
-    def test_transfer_json_success(self, mock_transfers_class, mock_path_join):
-        """Test successful generation of JSON file."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_path_join.return_value = "/path/to/files/transfers.json"
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_json_success(self, mock_player_leaders_class, mock_path_join):
+        """Test successful generation of goals JSON file."""
+        # Setup mocks
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_path_join.return_value = "/path/to/files/top_scorers.json"
 
-        result, status_code = TransferService.transfer_json(
-            team="Arsenal",
-            file_name="transfers",
-            transfer_type="out",
+        # Call service method
+        result, status_code = PlayerService.get_player_data_goals_json(
+            file_name="top_scorers",
             league="Premier League",
+            season="2022-2023",
+            header="Top Scorers",
+            limit=10
+        )
+
+        # Assert results
+        assert status_code == 200
+        assert result == "/path/to/files/top_scorers.json"
+
+        # Verify mocks were called with correct parameters
+        mock_player_leaders_class.assert_called_once_with("G", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_json.assert_called_once_with("top_scorers", "Top Scorers", 10)
+        mock_path_join.assert_called_once_with(os.getcwd(), "files", "top_scorers.json")
+
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_goals_json_error(self, mock_player_leaders_class):
+        """Test error handling when generating goals JSON file."""
+        # Setup mock to raise ValueError
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_json.side_effect = ValueError("Invalid league")
+
+        result, status_code = PlayerService.get_player_data_goals_json(
+            file_name="top_scorers",
+            league="Invalid League",
             season="2022-2023"
+        )
+
+        assert status_code == 400
+        assert "error" in result
+        assert result["error"] == "Invalid league"
+
+    @patch("os.path.join")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_json_success(self, mock_player_leaders_class, mock_path_join):
+        """Test successful generation of assists JSON file."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_path_join.return_value = "/path/to/files/top_assists.json"
+
+        result, status_code = PlayerService.get_player_data_assists_json(
+            file_name="top_assists",
+            league="Premier League",
+            season="2022-2023",
+            header="Top Playmakers",
+            limit=10
         )
 
         assert status_code == 200
-        assert result == "/path/to/files/transfers.json"
+        assert result == "/path/to/files/top_assists.json"
 
-        mock_transfers_class.assert_called_once_with("2022-2023", "Premier League")
-        mock_transfers_instance.transfer_json.assert_called_once_with("Arsenal", "transfers", "out")
-        mock_path_join.assert_called_once_with(os.getcwd(), "files", "transfers.json")
+        mock_player_leaders_class.assert_called_once_with("A", "2022-2023", "Premier League")
+        mock_player_leaders_instance.get_top_stats_json.assert_called_once_with("top_assists", "Top Playmakers", 10)
+        mock_path_join.assert_called_once_with(os.getcwd(), "files", "top_assists.json")
 
-    @patch("premier_league.transfers.transfers.TeamNotFoundError", Exception)
-    @patch("premier_league.Transfers")
-    def test_transfer_json_team_not_found(self, mock_transfers_class):
-        """Test handling TeamNotFoundError in transfer_json."""
-        mock_transfers_instance = mock_transfers_class.return_value
-        mock_transfers_instance.transfer_json.side_effect = Exception("Team not found")
+    @patch("premier_league.PlayerSeasonLeaders")
+    def test_get_player_data_assists_json_error(self, mock_player_leaders_class):
+        """Test error handling when generating assists JSON file."""
+        mock_player_leaders_instance = mock_player_leaders_class.return_value
+        mock_player_leaders_instance.get_top_stats_json.side_effect = ValueError("Invalid league")
 
-        result, status_code = TransferService.transfer_json(
-            team="NonexistentTeam",
-            file_name="transfers",
-            transfer_type="both",
-            league="Premier League",
+        result, status_code = PlayerService.get_player_data_assists_json(
+            file_name="top_assists",
+            league="Invalid League",
             season="2022-2023"
         )
 
-        assert status_code == 404
+        assert status_code == 400
         assert "error" in result
-        assert "No Team by the name of NonexistentTeam exists" in result["error"]
+        assert result["error"] == "Invalid league"

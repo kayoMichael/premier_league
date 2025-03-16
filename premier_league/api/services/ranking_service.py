@@ -4,7 +4,7 @@ class RankingService:
 
     @staticmethod
     def get_ranking(
-        season: str = None, header: str = None, league: str = "Premier league"
+        league: str, season: str = None, header: str = None
     ):
         from premier_league import RankingTable
         try:
@@ -14,7 +14,7 @@ class RankingService:
         return json_data, 200
 
     @staticmethod
-    def get_ranking_list(season: str = None, league: str = "Premier league"):
+    def get_ranking_list(league: str, season: str = None):
         from premier_league import RankingTable
         try:
             ranking_data = RankingTable(league, season).get_ranking_list()
@@ -25,7 +25,7 @@ class RankingService:
 
     @staticmethod
     def get_ranking_csv(
-        file_name: str, season: str = None, league: str = "Premier league"
+        file_name: str, league: str, season: str = None
     ):
         from premier_league import RankingTable
         try:
@@ -37,7 +37,7 @@ class RankingService:
 
     @staticmethod
     def get_ranking_json(
-        file_name: str, season: str = None, league: str = "Premier league"
+        file_name: str, league: str, season: str = None
     ):
         from premier_league import RankingTable
         try:
@@ -49,7 +49,7 @@ class RankingService:
 
     @staticmethod
     def get_ranking_pdf(
-        file_name: str, season: str = None, league: str = "Premier league"
+        file_name: str, league: str, season: str = None
     ):
         from premier_league import RankingTable
         try:

@@ -61,7 +61,7 @@ class TestRankingService:
         mock_ranking_table_instance = mock_ranking_table_class.return_value
         mock_ranking_table_instance.get_ranking_list.side_effect = ValueError("Invalid season")
 
-        result, status_code = RankingService.get_ranking_list(season="Invalid")
+        result, status_code = RankingService.get_ranking_list(season="Invalid", league="Premier League")
 
         assert status_code == 400
         assert "error" in result

@@ -8,16 +8,16 @@ class TestPlayersRoutes:
     """Tests for the players routes."""
 
     @patch('premier_league.api.services.player_service.PlayerService.get_player_data_goals')
-    def test_get_scorers(self, mock_get_goals, mock_player_data, client):
+    def test_get_scorers(self, mock_get_goals, mock_player_goals_data, client):
         """Test GET /players/goals endpoint."""
         # Mock the services response
 
-        mock_get_goals.return_value = (mock_player_data, 200)
+        mock_get_goals.return_value = (mock_player_goals_data, 200)
 
         # Test without parameters
         response = client.get('/players/goals')
         assert response.status_code == 200
-        assert json.loads(response.data) == mock_player_data
+        assert json.loads(response.data) == mock_player_goals_data
 
         # Test with season parameter
         response = client.get('/players/goals?season=2022-2023')
@@ -35,15 +35,15 @@ class TestPlayersRoutes:
         assert json.loads(response.data) == {"error": "Limit must be a number"}
 
     @patch('premier_league.api.services.player_service.PlayerService.get_player_data_assists')
-    def test_get_assists(self, mock_get_assists, mock_player_data, client):
+    def test_get_assists(self, mock_get_assists, mock_player_assists_data, client):
         """Test GET /players/assists endpoint."""
         # Mock the services response
-        mock_get_assists.return_value = (mock_player_data, 200)
+        mock_get_assists.return_value = (mock_player_assists_data, 200)
 
         # Test without parameters
         response = client.get('/players/assists')
         assert response.status_code == 200
-        assert json.loads(response.data) == mock_player_data
+        assert json.loads(response.data) == mock_player_assists_data
 
         # Test with parameters
         response = client.get('/players/assists?season=2022-2023&limit=10')
@@ -124,11 +124,11 @@ class TestPlayersRoutes:
         )
 
     @patch('premier_league.api.services.player_service.PlayerService.get_player_data_goals_json')
-    def test_get_scorers_json(self, mock_get_json, mock_player_data, create_temp_file, client, tmp_path):
+    def test_get_scorers_json(self, mock_get_json, mock_player_goals_data, create_temp_file, client, tmp_path):
         """Test GET /players/goals/json_file endpoint."""
 
         # Mock the services response
-        mock_get_json.side_effect = lambda *args, **kwargs: (create_temp_file("test_goals.json", str(mock_player_data)), 200)
+        mock_get_json.side_effect = lambda *args, **kwargs: (create_temp_file("test_goals.json", str(mock_player_goals_data)), 200)
 
         # Test with required parameters
         response = client.get('/players/goals/json_file?filename=test_goals')
@@ -160,11 +160,11 @@ class TestPlayersRoutes:
         )
 
     @patch('premier_league.api.services.player_service.PlayerService.get_player_data_assists_json')
-    def test_get_assists_json(self, mock_get_json, mock_player_data, create_temp_file, client, tmp_path):
+    def test_get_assists_json(self, mock_get_json, mock_player_assists_data, create_temp_file, client, tmp_path):
         """Test GET /players/assists/json_file endpoint."""
 
         # Mock the services response
-        mock_get_json.side_effect = lambda *args, **kwargs: (create_temp_file("test_assists.json", str(mock_player_data)), 200)
+        mock_get_json.side_effect = lambda *args, **kwargs: (create_temp_file("test_assists.json", str(mock_player_assists_data)), 200)
 
         # Test with required parameters
         response = client.get('/players/assists/json_file?filename=test_assists')

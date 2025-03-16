@@ -5,7 +5,7 @@ from ...utils.methods import export_to_dict
 class PlayerService:
     @staticmethod
     def get_player_data_goals(
-        season: str = None, limit: int = None, league: str = "Premier league"
+        league: str, season: str = None, limit: int = None
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -19,7 +19,7 @@ class PlayerService:
 
     @staticmethod
     def get_player_data_assists(
-        season: str = None, limit: int = None, league: str = "Premier league"
+        league: str, season: str = None, limit: int = None
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -34,10 +34,10 @@ class PlayerService:
     @staticmethod
     def get_player_data_goals_csv(
         file_name: str,
+        league: str,
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -53,10 +53,10 @@ class PlayerService:
     @staticmethod
     def get_player_data_assists_csv(
         file_name: str,
+        league: str,
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -72,10 +72,10 @@ class PlayerService:
     @staticmethod
     def get_player_data_goals_json(
         file_name: str,
+        league: str,
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -91,10 +91,10 @@ class PlayerService:
     @staticmethod
     def get_player_data_assists_json(
         file_name: str,
+        league: str,
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
