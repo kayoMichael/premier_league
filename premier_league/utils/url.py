@@ -1,3 +1,6 @@
+import pdb
+
+
 class PredictorURL:
     BASE_URLS = {
         "Premier League": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
@@ -16,6 +19,7 @@ class PredictorURL:
 
 
 class RANKING_URL:
+
     BASE_URLS = {
         "premier league": "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
         "la liga": "https://en.wikipedia.org/wiki/{SEASON}_La_Liga",
@@ -27,7 +31,7 @@ class RANKING_URL:
     @classmethod
     def get(cls, league: str) -> str:
         """Returns all formatted URLs for the given season."""
-        if league not in cls.BASE_URLS:
+        if league.strip() not in cls.BASE_URLS:
             raise ValueError(
                 f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
             )
@@ -75,6 +79,6 @@ class TRANSFERS_URL:
         """Returns all formatted URLs for the given season."""
         if league not in cls.BASE_URLS:
             raise ValueError(
-                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys()).title()}"
             )
         return cls.BASE_URLS[league]

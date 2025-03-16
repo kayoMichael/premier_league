@@ -1,10 +1,11 @@
 import os
 
+from ...utils.methods import export_to_dict
 
 class PlayerService:
     @staticmethod
     def get_player_data_goals(
-        season: str = None, limit: int = None, league: str = None
+        season: str = None, limit: int = None, league: str = "Premier league"
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -14,11 +15,11 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        return player_data, 200
+        return export_to_dict(player_data), 200
 
     @staticmethod
     def get_player_data_assists(
-        season: str = None, limit: int = None, league: str = None
+        season: str = None, limit: int = None, league: str = "Premier league"
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -28,7 +29,7 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        return player_data, 200
+        return export_to_dict(player_data), 200
 
     @staticmethod
     def get_player_data_goals_csv(
@@ -36,7 +37,7 @@ class PlayerService:
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = None,
+        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -46,10 +47,7 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..")
-        )
-        file_directory = os.path.join(project_root, "files", f"{file_name}.csv")
+        file_directory = os.path.join(os.getcwd(), "files", f"{file_name}.csv")
         return file_directory, 200
 
     @staticmethod
@@ -58,7 +56,7 @@ class PlayerService:
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = None,
+        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -68,10 +66,7 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..")
-        )
-        file_directory = os.path.join(project_root, "files", f"{file_name}.csv")
+        file_directory = os.path.join(os.getcwd(), "files", f"{file_name}.csv")
         return file_directory, 200
 
     @staticmethod
@@ -80,7 +75,7 @@ class PlayerService:
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = None,
+        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -90,10 +85,7 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..")
-        )
-        file_directory = os.path.join(project_root, "files", f"{file_name}.json")
+        file_directory = os.path.join(os.getcwd(), "files", f"{file_name}.json")
         return file_directory, 200
 
     @staticmethod
@@ -102,7 +94,7 @@ class PlayerService:
         season: str = None,
         header: str = None,
         limit: int = None,
-        league: str = None,
+        league: str = "Premier league",
     ):
         from premier_league import PlayerSeasonLeaders
         try:
@@ -112,8 +104,5 @@ class PlayerService:
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..")
-        )
-        file_directory = os.path.join(project_root, "files", f"{file_name}.json")
+        file_directory = os.path.join(os.getcwd(), "files", f"{file_name}.json")
         return file_directory, 200

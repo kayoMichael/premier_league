@@ -35,7 +35,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         self,
         stat_type: Literal["G", "A"],
         target_season: Optional[str] = None,
-        league: Optional[str] = "premier league",
+        league: Optional[str] = "Premier League",
     ):
         """
         Initialize the PlayerSeasonLeaders object.
@@ -120,6 +120,7 @@ class PlayerSeasonLeaders(BaseScrapper):
             header    (str, optional): The header for the CSV file. Defaults to None.
             limit     (int, optional): The number of top players to include. Defaults to None.
         """
+
         export_to_csv(file_name, self.get_top_stats_list(limit), header)
 
     def get_top_stats_json(self, file_name: str, header: str = None, limit: int = None):

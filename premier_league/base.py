@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Union
 from xml.etree import ElementTree
 
+import requests_cache
 import requests
 from bs4 import BeautifulSoup
 from lxml import etree
@@ -15,7 +16,6 @@ from tqdm import tqdm
 
 from premier_league.utils.methods import clean_xml_text
 from premier_league.utils.threading import threaded
-
 
 @dataclass
 class BaseScrapper:
@@ -30,6 +30,9 @@ class BaseScrapper:
         page (ElementTree): The parsed XML representation of the web page.
         season (str): The processed season for scraping data.
         target_season (str): The target season (parameter) for scraping data.
+        cache (bool): Whether to cache the HTTP requests. Defaults to True.
+        expire_cache (int): The expiry time for the cache in seconds. Defaults to 7200.
+        session (Union[requests_cache.CachedSession, requests]): The requests session object.
     """
 
     url: str
@@ -37,6 +40,9 @@ class BaseScrapper:
     page: ElementTree = field(default_factory=lambda: None, init=False)
     season: str = field(default=None, init=False)
     target_season: str = field(default=None)
+    cache: bool = field(default=True)
+    expire_cache: int = field(default=7200)
+    session: Union[requests_cache.CachedSession, requests] = field(default=requests, init=False)
 
     def __post_init__(self):
         """
@@ -47,6 +53,9 @@ class BaseScrapper:
         """
         if not self.requires_season:
             return
+
+        if self.cache:
+            self.session = requests_cache.CachedSession("prem_cache", expire_after=self.expire_cache)
 
         current_date = datetime.now()
         if not self.target_season:
@@ -93,7 +102,7 @@ class BaseScrapper:
             HTTPException: If an error occurs during the request.
         """
         try:
-            response: Response = requests.get(
+            response: Response = self.session.get(
                 url=self.url,
                 headers={
                     "User-Agent": (
@@ -102,7 +111,7 @@ class BaseScrapper:
                         "Chrome/113.0.0.0 "
                         "Safari/537.36"
                     ),
-                },
+                }
             )
             return response
         except Exception as e:
@@ -117,6 +126,12 @@ class BaseScrapper:
         """
         response: Response = self.make_request()
         return BeautifulSoup(markup=response.content, features="html.parser")
+
+    def clear_cache(self):
+        """
+        Clear the cache for the current session.
+        """
+        self.session.cache.clear()
 
     @staticmethod
     def convert_to_xml(bsoup: BeautifulSoup):

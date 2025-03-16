@@ -12,3 +12,4 @@ main.py
 *.db
 .eggs/
 test/
+manual_test/

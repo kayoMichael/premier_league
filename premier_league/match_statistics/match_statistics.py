@@ -834,7 +834,6 @@ class MatchStatistics(BaseDataSetScrapper):
             self.session.add(away_statistics)
 
             self.session.commit()
-
         except Exception as e:
             self.session.rollback()
             raise Exception(f"Error adding match data: {str(e)}")

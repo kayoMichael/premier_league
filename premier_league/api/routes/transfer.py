@@ -17,6 +17,7 @@ def get_all_teams():
 
     Query Parameters:
         season (str, optional): Filter results by season (e.g., '2023-2024')
+        league (str, optional): Filter results by league (e.g., 'Premier league')
 
     Returns:
         tuple: JSON response containing:
@@ -24,7 +25,9 @@ def get_all_teams():
             - int: HTTP status code
     """
     season = request.args.get("season")
-    response = TransferService().get_all_current_teams(season)
+    league = request.args.get("league")
+
+    response = TransferService().get_all_current_teams(league=league, season=season)
     return jsonify(response[0]), response[1]
 
 
@@ -52,8 +55,9 @@ def get_transfer_in_data():
     league = request.args.get("league")
     if team is None:
         return {"error": "Missing team parameter"}, 400
+
     response = TransferService().get_transfer_in_data(
-        team, season=season, league=league
+        team=team, season=season, league=league if league else "Premier League"
     )
     return jsonify(response[0]), response[1]
 
@@ -83,7 +87,7 @@ def get_transfer_out_data():
     if team is None:
         return {"error": "Missing team parameter"}, 400
     response = TransferService().get_transfer_out_data(
-        team, season=season, league=league
+        team=team, season=season, league=league if league else "Premier League"
     )
     return jsonify(response[0]), response[1]
 
@@ -133,7 +137,7 @@ def get_transfer_data_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = TransferService().transfer_csv(
-        team, safe_filename, transfer_type, season, league
+        team=team, file_name=safe_filename, transfer_type=transfer_type, season=season, league=league if league else "Premier League"
     )
     g.temp_state["file_path"] = response[0]
 
@@ -193,7 +197,7 @@ def get_transfer_data_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = TransferService().transfer_json(
-        team, safe_filename, transfer_type, season, league
+        team=team, file_name=safe_filename, transfer_type=transfer_type, season=season, league=league if league else "Premier League"
     )
     g.temp_state["file_path"] = response[0]
 

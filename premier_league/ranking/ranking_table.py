@@ -1,4 +1,5 @@
 import os
+import pdb
 import re
 from typing import Optional
 
@@ -52,7 +53,7 @@ class RankingTable(BaseScrapper):
         )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
-        self.league = league.title()
+        self.league = league.title() if league else "Premier League"
 
     def _init_ranking_table(self) -> list:
         """
@@ -351,7 +352,7 @@ class RankingTable(BaseScrapper):
         for tournament in possible_european_spot:
             qualified_teams = []
             teams = self.get_list_by_xpath(
-                f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()'
+                f'//tr[.//th/a[contains(text(), "{tournament}")]]/th/a/@title'
             )
             for item in teams:
                 if "(" in item or ")" in item or "Fair Play" in item:
@@ -372,9 +373,14 @@ class RankingTable(BaseScrapper):
         ]
         for index, tournament in enumerate(qualified.keys()):
             for team in qualified[tournament]:
-                team_index = self.ranking_list.index(
-                    [i for i in self.ranking_list if team in i][0]
-                )
+                import pdb
+
+                try:
+                    team_index = self.ranking_list.index(
+                        [i for i in self.ranking_list if team in i][0]
+                    )
+                except IndexError:
+                    pdb.set_trace()
                 style.append(
                     ("BACKGROUND", (0, team_index), (-1, team_index), colors[index])
                 )

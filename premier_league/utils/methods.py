@@ -2,7 +2,7 @@ import csv
 import json
 import os
 import re
-from typing import Union
+from typing import Union, Optional
 
 
 def remove_duplicates(seq) -> list:
@@ -32,8 +32,11 @@ def remove_qualification_relegation_and_css(data):
         ):
             skip_next = True
             continue
-        if item == "(C)" or item == "(R)":
+        if item == "(C)" or item == "(R)" or item == "(O)":
             continue
+
+        if item == "Milan":
+            item = "AC Milan"
 
         if (
             isinstance(item, str)
@@ -79,11 +82,10 @@ def export_to_csv(
 
 def export_to_dict(
     data: list[list],
-    data_2: list[list] = None,
-    header_1: str = None,
-    header_2: str = None,
+    data_2: Optional[list[list]] = None,
+    header_1: Optional[str] = None,
+    header_2: Optional[str] = None,
 ):
-    os.makedirs("files", exist_ok=True)
     keys = data[0]
 
     json_data = [dict(zip(keys, row)) for row in data[1:]]
