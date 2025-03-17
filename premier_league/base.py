@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Optional, Union
 from xml.etree import ElementTree
 
-import requests_cache
 import requests
+import requests_cache
 from bs4 import BeautifulSoup
 from lxml import etree
 from requests import Response
@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from premier_league.utils.methods import clean_xml_text
 from premier_league.utils.threading import threaded
+
 
 @dataclass
 class BaseScrapper:
@@ -42,7 +43,9 @@ class BaseScrapper:
     target_season: str = field(default=None)
     cache: bool = field(default=True)
     expire_cache: int = field(default=7200)
-    session: Union[requests_cache.CachedSession, requests] = field(default=requests, init=False)
+    session: Union[requests_cache.CachedSession, requests] = field(
+        default=requests, init=False
+    )
 
     def __post_init__(self):
         """
@@ -55,7 +58,9 @@ class BaseScrapper:
             return
 
         if self.cache:
-            self.session = requests_cache.CachedSession("prem_cache", expire_after=self.expire_cache)
+            self.session = requests_cache.CachedSession(
+                "prem_cache", expire_after=self.expire_cache
+            )
 
         current_date = datetime.now()
         if not self.target_season:
@@ -111,7 +116,7 @@ class BaseScrapper:
                         "Chrome/113.0.0.0 "
                         "Safari/537.36"
                     ),
-                }
+                },
             )
             return response
         except Exception as e:

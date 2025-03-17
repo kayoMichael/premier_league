@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Literal, Optional
 
@@ -147,6 +148,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         """
         pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
         pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
+        os.makedirs(path, exist_ok=True)
 
         # Set up the title
         pdf.setFont("Arial", 16)
@@ -174,7 +176,6 @@ class PlayerSeasonLeaders(BaseScrapper):
         table.setStyle(TableStyle(table_styles))
 
         # Position and draw the table
-        table.wrapOn(pdf, 0, 0)
         table_width, table_height = table.wrapOn(
             pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
         )

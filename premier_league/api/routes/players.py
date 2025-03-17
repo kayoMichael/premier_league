@@ -33,7 +33,9 @@ def get_scorers():
         return {"error": "Limit must be a number"}, 400
 
     response = PlayerService().get_player_data_goals(
-        season=season, limit=int(limit) if limit else None, league=league if league else "Premier League"
+        season=season,
+        limit=int(limit) if limit else None,
+        league=league if league else "Premier League",
     )
     return jsonify(response[0]), response[1]
 
@@ -64,7 +66,9 @@ def get_assists():
         return {"error": "Limit must be a number"}, 400
 
     response = PlayerService().get_player_data_assists(
-        season=season, limit=int(limit) if limit else None, league=league if league else "Premier League"
+        season=season,
+        limit=int(limit) if limit else None,
+        league=league if league else "Premier League",
     )
     return jsonify(response[0]), response[1]
 
@@ -105,7 +109,11 @@ def get_scorers_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_goals_csv(
-        file_name=safe_filename, season=season, header=header, limit=int(limit) if limit else None, league=league if league else "Premier League"
+        file_name=safe_filename,
+        season=season,
+        header=header,
+        limit=int(limit) if limit else None,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -213,7 +221,11 @@ def get_scorers_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = PlayerService().get_player_data_goals_json(
-        file_name=safe_filename, season=season, header=header, limit = int(limit) if limit else None, league=league if league else "Premier League"
+        file_name=safe_filename,
+        season=season,
+        header=header,
+        limit=int(limit) if limit else None,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 

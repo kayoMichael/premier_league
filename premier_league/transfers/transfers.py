@@ -82,9 +82,7 @@ class Transfers(BaseScrapper):
                 team = target_team.split(" » ")[0].strip().title()
                 if "Fc" in team:
                     team = team.replace("Fc", "FC")
-                team_transfer_dict[team] = (
-                    player_transfers
-                )
+                team_transfer_dict[team] = player_transfers
             except IndexError:
                 break
 

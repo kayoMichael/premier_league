@@ -1,12 +1,12 @@
 import os
 
+
 class RankingService:
 
     @staticmethod
-    def get_ranking(
-        league: str, season: str = None, header: str = None
-    ):
+    def get_ranking(league: str, season: str = None, header: str = None):
         from premier_league import RankingTable
+
         try:
             json_data = RankingTable(league, season).get_ranking_dict(header)
         except ValueError as e:
@@ -16,6 +16,7 @@ class RankingService:
     @staticmethod
     def get_ranking_list(league: str, season: str = None):
         from premier_league import RankingTable
+
         try:
             ranking_data = RankingTable(league, season).get_ranking_list()
         except ValueError as e:
@@ -24,10 +25,9 @@ class RankingService:
         return ranking_data, 200
 
     @staticmethod
-    def get_ranking_csv(
-        file_name: str, league: str, season: str = None
-    ):
+    def get_ranking_csv(file_name: str, league: str, season: str = None):
         from premier_league import RankingTable
+
         try:
             RankingTable(league, season).get_ranking_csv(file_name)
         except ValueError as e:
@@ -36,10 +36,9 @@ class RankingService:
         return file_directory, 200
 
     @staticmethod
-    def get_ranking_json(
-        file_name: str, league: str, season: str = None
-    ):
+    def get_ranking_json(file_name: str, league: str, season: str = None):
         from premier_league import RankingTable
+
         try:
             RankingTable(league, season).get_ranking_json(file_name)
         except ValueError as e:
@@ -48,10 +47,9 @@ class RankingService:
         return file_directory, 200
 
     @staticmethod
-    def get_ranking_pdf(
-        file_name: str, league: str, season: str = None
-    ):
+    def get_ranking_pdf(file_name: str, league: str, season: str = None):
         from premier_league import RankingTable
+
         try:
             RankingTable(league, season).get_ranking_pdf(file_name)
         except ValueError as e:

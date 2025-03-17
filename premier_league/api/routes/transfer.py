@@ -137,7 +137,11 @@ def get_transfer_data_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = TransferService().transfer_csv(
-        team=team, file_name=safe_filename, transfer_type=transfer_type, season=season, league=league if league else "Premier League"
+        team=team,
+        file_name=safe_filename,
+        transfer_type=transfer_type,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -197,7 +201,11 @@ def get_transfer_data_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = TransferService().transfer_json(
-        team=team, file_name=safe_filename, transfer_type=transfer_type, season=season, league=league if league else "Premier League"
+        team=team,
+        file_name=safe_filename,
+        transfer_type=transfer_type,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 

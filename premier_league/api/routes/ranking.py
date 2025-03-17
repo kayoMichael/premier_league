@@ -50,7 +50,9 @@ def get_standings_table():
     """
     season = request.args.get("season")
     league = request.args.get("league")
-    response = RankingService().get_ranking_list(season=season, league=league if league else "Premier League")
+    response = RankingService().get_ranking_list(
+        season=season, league=league if league else "Premier League"
+    )
     return jsonify(response[0]), response[1]
 
 
@@ -83,7 +85,9 @@ def get_standings_csv():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = RankingService().get_ranking_csv(
-        file_name=safe_filename, season=season, league=league if league else "Premier League"
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -127,7 +131,9 @@ def get_standings_json():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = RankingService().get_ranking_json(
-        file_name=safe_filename, season=season, league=league if league else "Premier League"
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -172,7 +178,9 @@ def get_standings_pdf():
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
     response = RankingService().get_ranking_pdf(
-        file_name=safe_filename, season=season, league=league if league else "Premier League"
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 

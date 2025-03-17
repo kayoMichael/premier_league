@@ -2,7 +2,7 @@ import csv
 import json
 import os
 import re
-from typing import Union, Optional
+from typing import Optional, Union
 
 
 def remove_duplicates(seq) -> list:

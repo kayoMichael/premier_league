@@ -1,6 +1,7 @@
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from premier_league.api.services.ranking_service import RankingService
 
@@ -15,9 +16,7 @@ class TestRankingService:
         mock_ranking_table_instance.get_ranking_dict.return_value = mock_ranking_data
 
         result, status_code = RankingService.get_ranking(
-            season="2022-2023",
-            header="Stats",
-            league="Premier League"
+            season="2022-2023", header="Stats", league="Premier League"
         )
 
         assert status_code == 200
@@ -30,7 +29,9 @@ class TestRankingService:
     def test_get_ranking_error(self, mock_ranking_table_class):
         """Test error handling when retrieving ranking data."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_dict.side_effect = ValueError("Invalid league")
+        mock_ranking_table_instance.get_ranking_dict.side_effect = ValueError(
+            "Invalid league"
+        )
 
         result, status_code = RankingService.get_ranking(league="Invalid League")
 
@@ -39,14 +40,17 @@ class TestRankingService:
         assert result["error"] == "Invalid league"
 
     @patch("premier_league.RankingTable")
-    def test_get_ranking_list_success(self, mock_ranking_table_class, mock_ranking_data_list):
+    def test_get_ranking_list_success(
+        self, mock_ranking_table_class, mock_ranking_data_list
+    ):
         """Test successful retrieval of ranking list data."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_list.return_value = mock_ranking_data_list
+        mock_ranking_table_instance.get_ranking_list.return_value = (
+            mock_ranking_data_list
+        )
 
         result, status_code = RankingService.get_ranking_list(
-            season="2022-2023",
-            league="Premier League"
+            season="2022-2023", league="Premier League"
         )
 
         assert status_code == 200
@@ -59,9 +63,13 @@ class TestRankingService:
     def test_get_ranking_list_error(self, mock_ranking_table_class):
         """Test error handling when retrieving ranking list data."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_list.side_effect = ValueError("Invalid season")
+        mock_ranking_table_instance.get_ranking_list.side_effect = ValueError(
+            "Invalid season"
+        )
 
-        result, status_code = RankingService.get_ranking_list(season="Invalid", league="Premier League")
+        result, status_code = RankingService.get_ranking_list(
+            season="Invalid", league="Premier League"
+        )
 
         assert status_code == 400
         assert "error" in result
@@ -75,9 +83,7 @@ class TestRankingService:
         mock_path_join.return_value = "/path/to/files/ranking.csv"
 
         result, status_code = RankingService.get_ranking_csv(
-            file_name="ranking",
-            season="2022-2023",
-            league="Premier League"
+            file_name="ranking", season="2022-2023", league="Premier League"
         )
         assert status_code == 200
         assert result == "/path/to/files/ranking.csv"
@@ -90,11 +96,12 @@ class TestRankingService:
     def test_get_ranking_csv_error(self, mock_ranking_table_class):
         """Test error handling when generating CSV file."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_csv.side_effect = ValueError("Invalid league")
+        mock_ranking_table_instance.get_ranking_csv.side_effect = ValueError(
+            "Invalid league"
+        )
 
         result, status_code = RankingService.get_ranking_csv(
-            file_name="ranking",
-            league="Invalid League"
+            file_name="ranking", league="Invalid League"
         )
 
         assert status_code == 400
@@ -110,9 +117,7 @@ class TestRankingService:
         mock_path_join.return_value = "/path/to/files/ranking.json"
 
         result, status_code = RankingService.get_ranking_json(
-            file_name="ranking",
-            season="2022-2023",
-            league="Premier League"
+            file_name="ranking", season="2022-2023", league="Premier League"
         )
 
         assert status_code == 200
@@ -126,11 +131,12 @@ class TestRankingService:
     def test_get_ranking_json_error(self, mock_ranking_table_class):
         """Test error handling when generating JSON file."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_json.side_effect = ValueError("Invalid league")
+        mock_ranking_table_instance.get_ranking_json.side_effect = ValueError(
+            "Invalid league"
+        )
 
         result, status_code = RankingService.get_ranking_json(
-            file_name="ranking",
-            league="Invalid League"
+            file_name="ranking", league="Invalid League"
         )
 
         assert status_code == 400
@@ -145,9 +151,7 @@ class TestRankingService:
         mock_path_join.return_value = "/path/to/files/ranking.pdf"
 
         result, status_code = RankingService.get_ranking_pdf(
-            file_name="ranking",
-            season="2022-2023",
-            league="Premier League"
+            file_name="ranking", season="2022-2023", league="Premier League"
         )
 
         assert status_code == 200
@@ -161,11 +165,12 @@ class TestRankingService:
     def test_get_ranking_pdf_error(self, mock_ranking_table_class):
         """Test error handling when generating PDF file."""
         mock_ranking_table_instance = mock_ranking_table_class.return_value
-        mock_ranking_table_instance.get_ranking_pdf.side_effect = ValueError("Invalid league")
+        mock_ranking_table_instance.get_ranking_pdf.side_effect = ValueError(
+            "Invalid league"
+        )
 
         result, status_code = RankingService.get_ranking_pdf(
-            file_name="ranking",
-            league="Invalid League"
+            file_name="ranking", league="Invalid League"
         )
 
         assert status_code == 400

@@ -1,6 +1,3 @@
-import pdb
-
-
 class PredictorURL:
     BASE_URLS = {
         "Premier League": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
@@ -19,7 +16,6 @@ class PredictorURL:
 
 
 class RANKING_URL:
-
     BASE_URLS = {
         "premier league": "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
         "la liga": "https://en.wikipedia.org/wiki/{SEASON}_La_Liga",
