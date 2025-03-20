@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from premier_league.api.app import create_app
@@ -23,20 +21,7 @@ def app():
     )
 
     app, _ = create_app(test_config)
-
-    test_files_dir = os.path.join(
-        os.path.dirname(__file__), "..", "premier_league", "files"
-    )
-    os.makedirs(test_files_dir, exist_ok=True)
-
     yield app
-
-    for file in os.listdir(test_files_dir):
-        if file.startswith("test_"):
-            try:
-                os.remove(os.path.join(test_files_dir, file))
-            except:
-                pass
 
 
 @pytest.fixture

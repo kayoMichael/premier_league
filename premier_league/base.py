@@ -32,6 +32,7 @@ class BaseScrapper:
         season (str): The processed season for scraping data.
         target_season (str): The target season (parameter) for scraping data.
         cache (bool): Whether to cache the HTTP requests. Defaults to True.
+        season_limit (int): The lower limit for the season. Defaults to 1992.
         expire_cache (int): The expiry time for the cache in seconds. Defaults to 7200.
         session (Union[requests_cache.CachedSession, requests]): The requests session object.
     """
@@ -42,6 +43,7 @@ class BaseScrapper:
     season: str = field(default=None, init=False)
     target_season: str = field(default=None)
     cache: bool = field(default=True)
+    season_limit: int = field(default=1992)
     expire_cache: int = field(default=7200)
     session: Union[requests_cache.CachedSession, requests] = field(
         default=requests, init=False
@@ -85,9 +87,9 @@ class BaseScrapper:
                 )
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
-            elif int(self.target_season[:4]) < 1992:
+            elif int(self.target_season[:4]) < self.season_limit:
                 raise ValueError(
-                    "Invalid target_season. This library only supports seasons after 1992-1993. It cannot be before 1992."
+                    f"Invalid target_season. This Class only supports seasons after {self.season_limit}/{self.season_limit + 1}. It cannot be before {self.season_limit}."
                 )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"

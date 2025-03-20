@@ -1,6 +1,6 @@
 import os
-import pdb
 import re
+import traceback
 from typing import Optional
 
 from reportlab.lib import colors
@@ -50,6 +50,7 @@ class RankingTable(BaseScrapper):
         super().__init__(
             RANKING_URL.get(league=league.lower()),
             target_season=target_season,
+            season_limit=1995,
         )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
@@ -124,52 +125,57 @@ class RankingTable(BaseScrapper):
             dir (str): The directory to save the PDF file to.
         """
         pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
-        os.makedirs("files", exist_ok=True)
-        pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
+        os.makedirs(dir, exist_ok=True)
 
-        pdf.setFont("Arial", 16)
-        title = f"{self.league} Table {self.season}"
-        title_width = pdf.stringWidth(title, "Arial", 16)
+        try:
+            pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
-        pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
-        pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
+            pdf.setFont("Arial", 16)
+            title = f"{self.league} Table {self.season}"
+            title_width = pdf.stringWidth(title, "Arial", 16)
 
-        pdf.setFont("Arial", 12)
-        table = Table(self.ranking_list)
-        if int(self.season[:4]) >= 2021 and self.league == "Premier League":
-            european_spots = self._find_european_qualification_spot()
-        else:
-            european_spots = self._scrap_european_qualification_spot()
+            pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
+            pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
-        # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
-        relegation = -3
-        if self.season == "1994-95":
-            relegation = -4
+            pdf.setFont("Arial", 12)
+            table = Table(self.ranking_list)
+            if int(self.season[:4]) >= 2021 and self.league == "Premier League":
+                european_spots = self._find_european_qualification_spot()
+            else:
+                european_spots = self._scrap_european_qualification_spot()
 
-        static_table_styles = [
-            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
-            ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, -1), "Arial"),
-            ("FONTSIZE", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("TOPPADDING", (0, 0), (-1, -1), 12),
-            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ("BACKGROUND", (0, relegation), (-1, -1), HexColor("#e06666")),
-        ]
+            # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
+            relegation = -3
+            if self.season == "1994-95":
+                relegation = -4
 
-        all_styles = static_table_styles + european_spots
-        table.setStyle(TableStyle(all_styles))
-        table.wrapOn(pdf, 0, 0)
-        table_width, table_height = table.wrapOn(
-            pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
-        )
-        x = (A3[0] - table_width) / 2
-        y = A3[1] - table_height - 1 * inch
-        table.drawOn(pdf, x, y)
+            static_table_styles = [
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
+                ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ("BACKGROUND", (0, relegation), (-1, -1), HexColor("#e06666")),
+            ]
 
-        pdf.save()
+            all_styles = static_table_styles + european_spots
+            table.setStyle(TableStyle(all_styles))
+            table.wrapOn(pdf, 0, 0)
+            table_width, table_height = table.wrapOn(
+                pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
+            )
+            x = (A3[0] - table_width) / 2
+            y = A3[1] - table_height - 1 * inch
+            table.drawOn(pdf, x, y)
+
+            pdf.save()
+        except Exception:
+            os.removedirs(dir)
+            traceback.print_exc()
 
     def _find_european_qualification_spot(
         self,

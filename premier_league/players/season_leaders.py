@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from typing import Literal, Optional
 
 from reportlab.lib import colors
@@ -49,7 +50,12 @@ class PlayerSeasonLeaders(BaseScrapper):
         self.league = league
         self.stat_type = stat_type
         self.stat_url = self._get_url()
-        super().__init__(url=self.stat_url, target_season=target_season)
+        self.season_limit = self._find_season_limit()
+        super().__init__(
+            url=self.stat_url,
+            target_season=target_season,
+            season_limit=self.season_limit,
+        )
         self.page = self.request_url_page()
         self._season_top_players_list = self._init_top_stats_table()
 
@@ -101,6 +107,25 @@ class PlayerSeasonLeaders(BaseScrapper):
             partitioned.append(sublist)
         return partitioned
 
+    def _find_season_limit(self):
+        """
+        Find the season limit for the given league.
+
+        Returns:
+            int: The season limit for the given league.
+        """
+        if self.stat_type == "G" and self.league.lower() == "premier league":
+            return 1995
+
+        season_limit_map = {
+            "premier league": 1997,
+            "la liga": 2008,
+            "serie a": 2010,
+            "ligue 1": 2010,
+            "bundesliga": 1988,
+        }
+        return season_limit_map[self.league.lower()]
+
     def get_top_stats_list(self, limit: int = None) -> list:
         """
         Get the processed list of top players and their statistics.
@@ -151,36 +176,41 @@ class PlayerSeasonLeaders(BaseScrapper):
         os.makedirs(path, exist_ok=True)
 
         # Set up the title
-        pdf.setFont("Arial", 16)
-        main_words = "Goal Scorer" if self.stat_type == "G" else "Assist Leader"
-        title = f"{self.season} Premier League Top {main_words}"
-        title_width = pdf.stringWidth(title, "Arial", 16)
-        pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
-        pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
+        try:
+            pdf.setFont("Arial", 16)
+            main_words = "Goal Scorer" if self.stat_type == "G" else "Assist Leader"
+            title = f"{self.season} Premier League Top {main_words}"
+            title_width = pdf.stringWidth(title, "Arial", 16)
+            pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
+            pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
-        # Create and style the table
-        pdf.setFont("Arial", 12)
-        table = Table(self._season_top_players_list[:22])
+            # Create and style the table
+            pdf.setFont("Arial", 12)
+            table = Table(self._season_top_players_list[:22])
 
-        table_styles = [
-            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
-            ("BACKGROUND", (0, 1), (-1, 1), HexColor("#FFD700")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, -1), "Arial"),
-            ("FONTSIZE", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("TOPPADDING", (0, 0), (-1, -1), 12),
-            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-        ]
-        table.setStyle(TableStyle(table_styles))
+            table_styles = [
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
+                ("BACKGROUND", (0, 1), (-1, 1), HexColor("#FFD700")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+            table.setStyle(TableStyle(table_styles))
 
-        # Position and draw the table
-        table_width, table_height = table.wrapOn(
-            pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
-        )
-        x = (A3[0] - table_width) / 2
-        y = A3[1] - table_height - 1 * inch
-        table.drawOn(pdf, x, y)
+            # Position and draw the table
+            table_width, table_height = table.wrapOn(
+                pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
+            )
+            x = (A3[0] - table_width) / 2
+            y = A3[1] - table_height - 1 * inch
+            table.drawOn(pdf, x, y)
 
-        pdf.save()
+            pdf.save()
+        except Exception:
+            os.removedirs(path)
+            traceback.print_exc()
+            raise Exception
