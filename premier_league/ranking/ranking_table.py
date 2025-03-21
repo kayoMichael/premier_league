@@ -1,4 +1,5 @@
 import os
+import pdb
 import re
 import traceback
 from typing import Optional
@@ -38,6 +39,7 @@ class RankingTable(BaseScrapper):
         self,
         league: Optional[str] = "Premier League",
         target_season: Optional[str] = None,
+        cache: Optional[bool] = True,
     ):
         """
         Initialize the RankingTable instance.
@@ -47,14 +49,16 @@ class RankingTable(BaseScrapper):
                                            If not provided, the current season is used.
             league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
+        self.league = league.title() if league else "Premier League"
         super().__init__(
-            RANKING_URL.get(league=league.lower()),
+            RANKING_URL.get(league=self.league.lower(), target_season=target_season),
             target_season=target_season,
-            season_limit=1995,
+            season_limit=self.find_season_limit(),
+            cache=cache,
         )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
-        self.league = league.title() if league else "Premier League"
+        self.cache = cache
 
     def _init_ranking_table(self) -> list:
         """
@@ -63,14 +67,27 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
-
+        teams = list(filter(lambda x: x not in ('(R)', '(C)'), self.get_list_by_xpath(RANKING.TEAMS)))
         ranking_rows = remove_qualification_relegation_and_css(
-            self.get_list_by_xpath(RANKING.CURRENT_RANKING)
+            self.get_list_by_xpath(RANKING.CURRENT_RANKING), teams
         )
-        ranking_list = [
-            ranking_rows[i : i + 10] for i in range(0, len(ranking_rows), 10)
-        ]
-        return ranking_list
+        return ranking_rows
+
+    def find_season_limit(self):
+        """
+        Find the season limit for the given league.
+
+        Returns:
+            int: The season limit for the given league.
+        """
+        season_limit_map = {
+            "premier league": 1947,
+            "la liga": 1929,
+            "serie a": 1929,
+            "ligue 1": 1945,
+            "bundesliga": 1963,
+        }
+        return season_limit_map[self.league.lower()]
 
     def get_ranking_list(self) -> list:
         """
@@ -379,14 +396,13 @@ class RankingTable(BaseScrapper):
         ]
         for index, tournament in enumerate(qualified.keys()):
             for team in qualified[tournament]:
-                import pdb
 
                 try:
                     team_index = self.ranking_list.index(
                         [i for i in self.ranking_list if team in i][0]
                     )
                 except IndexError:
-                    pdb.set_trace()
+                    pass
                 style.append(
                     ("BACKGROUND", (0, team_index), (-1, team_index), colors[index])
                 )

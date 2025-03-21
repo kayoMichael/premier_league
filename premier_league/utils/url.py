@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class PredictorURL:
     BASE_URLS = {
         "Premier League": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
@@ -17,21 +19,36 @@ class PredictorURL:
 
 class RANKING_URL:
     BASE_URLS = {
-        "premier league": "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
-        "la liga": "https://en.wikipedia.org/wiki/{SEASON}_La_Liga",
-        "serie a": "https://en.wikipedia.org/wiki/{SEASON}_Serie_A",
-        "ligue 1": "https://en.wikipedia.org/wiki/{SEASON}_Ligue_1",
-        "bundesliga": "https://en.wikipedia.org/wiki/{SEASON}_Bundesliga",
+        "premier league": {1992: "https://en.wikipedia.org/wiki/{SEASON}_Premier_League", 1947: "https://en.wikipedia.org/wiki/{SEASON}_Football_League_First_Division"},
+        "la liga": {1929: "https://en.wikipedia.org/wiki/{SEASON}_La_Liga"},
+        "serie a": {1929: "https://en.wikipedia.org/wiki/{SEASON}_Serie_A"},
+        "ligue 1": {2002: "https://en.wikipedia.org/wiki/{SEASON}_Ligue_1", 1945: "https://en.wikipedia.org/wiki/{SEASON}_French_Division_1"},
+        "bundesliga": {1963: "https://en.wikipedia.org/wiki/{SEASON}_Bundesliga"}
     }
 
     @classmethod
-    def get(cls, league: str) -> str:
+    def get(cls, league: str, target_season: str) -> str:
         """Returns all formatted URLs for the given season."""
-        if league.strip() not in cls.BASE_URLS:
+        league = league.strip()
+        if league not in cls.BASE_URLS:
             raise ValueError(
                 f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
             )
-        return cls.BASE_URLS[league]
+        if target_season[0:4].isdigit():
+            target_season = int(target_season[0:4])
+            if target_season > datetime.now().year:
+                raise ValueError("Season should be in the past")
+
+            seasons = cls.BASE_URLS[league].keys()
+            if min(seasons) > target_season:
+                raise ValueError(f"Class Does not Support Season that is less than {min(seasons)}")
+            if 1939 <= target_season <= 1945:
+                raise ValueError("Class Does not Support WWII soccer seasons.")
+            for season in seasons:
+                if target_season >= season:
+                    return cls.BASE_URLS[league][season]
+        else:
+            raise ValueError("Season should be in the format 'YYYY-YYYY'")
 
 
 class PLAYERS_URL:

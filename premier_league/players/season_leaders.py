@@ -38,6 +38,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         stat_type: Literal["G", "A"],
         target_season: Optional[str] = None,
         league: Optional[str] = "Premier League",
+        cache: bool = True
     ):
         """
         Initialize the PlayerSeasonLeaders object.
@@ -50,11 +51,12 @@ class PlayerSeasonLeaders(BaseScrapper):
         self.league = league
         self.stat_type = stat_type
         self.stat_url = self._get_url()
-        self.season_limit = self._find_season_limit()
+        self.season_limit = self.find_season_limit()
         super().__init__(
             url=self.stat_url,
             target_season=target_season,
             season_limit=self.season_limit,
+            cache=cache
         )
         self.page = self.request_url_page()
         self._season_top_players_list = self._init_top_stats_table()
@@ -107,7 +109,7 @@ class PlayerSeasonLeaders(BaseScrapper):
             partitioned.append(sublist)
         return partitioned
 
-    def _find_season_limit(self):
+    def find_season_limit(self):
         """
         Find the season limit for the given league.
 

@@ -46,7 +46,7 @@ class BaseScrapper:
     season_limit: int = field(default=1992)
     expire_cache: int = field(default=7200)
     session: Union[requests_cache.CachedSession, requests] = field(
-        default=requests, init=False
+        default=None, init=False
     )
 
     def __post_init__(self):
@@ -63,6 +63,8 @@ class BaseScrapper:
             self.session = requests_cache.CachedSession(
                 "prem_cache", expire_after=self.expire_cache
             )
+        else:
+            self.session = requests.session()
 
         current_date = datetime.now()
         if not self.target_season:
@@ -151,20 +153,21 @@ class BaseScrapper:
         Returns:
             ElementTree: The converted XML tree.
         """
-        return etree.HTML(str(bsoup))
+        return etree.HTML(bsoup.encode())
 
     @staticmethod
-    def additional_scrapper(additional_url):
+    def additional_scrapper(additional_url: str, cache: Optional[bool] = True):
         """
         Create a new BaseScrapper instance for an additional URL without creating a new object.
 
         Args:
             additional_url (str): The URL to scrape.
+            cache (bool): Whether to cache the HTTP requests. Defaults to True.
 
         Returns:
             BaseScrapper: A new BaseScrapper instance with the page loaded.
         """
-        scrapper = BaseScrapper(url=additional_url, requires_season=False)
+        scrapper = BaseScrapper(url=additional_url, requires_season=False, cache=cache)
         scrapper.page = BaseScrapper.request_url_page(scrapper)
         return scrapper
 
