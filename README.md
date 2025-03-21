@@ -188,118 +188,13 @@ Each game statistics record includes detailed metrics broken down by position gr
 ### Sample Game Statistics Output
 ```python
 {
-    "id": 1,
-    "game_id": "2024_PL_001",
-    "team_id": "TEAM_001",
-
-    # Expected goals and assists
     "xG": 2.3,
-    "xA": 1.8,
-    "xAG": 1.5,
-
-    # Shots
     "shots_total_FW": 8,
-    "shots_total_MF": 5,
-    "shots_total_DF": 1,
     "shots_on_target_FW": 4,
-    "shots_on_target_MF": 2,
-    "shots_on_target_DF": 0,
-
-    # Chance creation
-    "shot_creating_chances_FW": 6,
-    "shot_creating_chances_MF": 8,
-    "shot_creating_chances_DF": 2,
-    "goal_creating_actions_FW": 2,
-    "goal_creating_actions_MF": 3,
-    "goal_creating_actions_DF": 1,
-
-    # Passing Stats
-    "passes_completed_FW": 125,
     "passes_completed_MF": 245,
-    "passes_completed_DF": 180,
-    "pass_completion_percentage_FW": 78.5,
-    "pass_completion_percentage_MF": 89.2,
-    "pass_completion_percentage_DF": 92.5,
-    "key_passes": 12,
-    "passes_into_final_third": 45,
-    "passes_into_penalty_area": 18,
-    "crosses_into_penalty_area": 15,
-    "progressive_passes": 35,
-
-    # Defensive Stats
-    "tackles_won_FW": 3,
-    "tackles_won_MF": 8,
     "tackles_won_DF": 12,
-    "dribblers_challenged_won_FW": 2,
-    "dribblers_challenged_won_MF": 6,
-    "dribblers_challenged_won_DF": 8,
-    "blocks_FW": 1,
-    "blocks_MF": 4,
-    "blocks_DF": 9,
-    "interceptions_FW": 2,
-    "interceptions_MF": 8,
-    "interceptions_DF": 12,
-    "clearances_FW": 0,
-    "clearances_MF": 3,
-    "clearances_DF": 15,
-    "errors_leading_to_goal": 0,
-
-    # Possession Stats
     "possession_rate": 58,
-    "touches_FW": 145,
-    "touches_MF": 280,
-    "touches_DF": 225,
-    "touches_att_pen_area_FW": 12,
-    "touches_att_pen_area_MF": 5,
-    "touches_att_pen_area_DF": 1,
-    "take_ons_FW": 8,
-    "take_ons_MF": 10,
-    "take_ons_DF": 2,
-    "successful_take_ons_FW": 3,
-    "successful_take_ons_MF": 6,
-    "successful_take_ons_DF": 1,
-    "carries_FW": 45,
-    "carries_MF": 85,
-    "carries_DF": 35,
-    "carries_into_penalty_area": 8,
-    "total_carrying_distance_FW": 450,
-    "total_carrying_distance_MF": 850,
-    "total_carrying_distance_DF": 250,
-    "dispossessed_FW": 4,
-    "dispossessed_MF": 5,
-    "dispossessed_DF": 1,
-    "aerials_won_FW": 6,
-    "aerials_won_MF": 8,
-    "aerials_won_DF": 12,
-    "aerials_lost_FW": 4,
-    "aerials_lost_MF": 5,
-    "aerials_lost_DF": 3,
-    "miss_controlled_FW": 3,
-    "miss_controlled_MF": 2,
-    "miss_controlled_DF": 1,
-
-    # Goalkeeping Stats
-    "save_percentage": 75.0,
-    "saves": 4,
-    "PSxG": 1.2,
-    "passes_completed_GK": 22,
-    "crosses_stopped": 3,
-    "passes_40_yard_completed_GK": 8,
-
-    # Other Match Stats
-    "yellow_card": 2,
-    "red_card": 0,
-    "pens_won": 0,
-    "pens_conceded": 0,
-    "fouls_committed_FW": 2,
-    "fouls_committed_MF": 5,
-    "fouls_committed_DF": 3,
-    "fouls_drawn_FW": 4,
-    "fouls_drawn_MF": 3,
-    "fouls_drawn_DF": 1,
-    "offside_FW": 3,
-    "offside_MF": 1,
-    "offside_DF": 0
+    # ... many more statistics
 }
 ```
 
@@ -312,6 +207,34 @@ The database is automatically initialized using `init_db()` which:
 3. Seeds initial league data
 4. Sets up all required tables and relationships
 
+```python
+def init_db(
+    db_filename: str = "premier_league.db",
+    db_directory: str = "premier_league_sqlite"
+) -> Session:
+    """
+    Initialize the database and seed initial data
+    """
+    # Creates user data directory
+    data_dir = appdirs.user_data_dir(db_directory)
+
+    # Sets up database if not exists
+    db_path = os.path.join(data_dir, db_filename)
+    if not os.path.exists(db_path):
+        # Initialize from SQL dump
+        conn = sqlite3.connect(db_path)
+        sql_path = files("premier_league").joinpath("data/premier_league.sql")
+        conn.executescript(sql_file.read())
+
+    # Create SQLAlchemy session
+    engine = create_engine(f"sqlite:///{db_path}")
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
+
+    # Seed initial league data
+    seed_initial_data(session)
+    return session
+```
 
 ### Supported Leagues
 The database is seeded with these leagues by default:
@@ -324,11 +247,11 @@ The database is seeded with these leagues by default:
 
 ## Notes
 
-- The database is updated with each release but to include the latest available match data, needs to be updated via the `update_data_set()` method.
+- The database is automatically updated to include the latest available match data
 - All statistics are sourced from official match reports
 - Position groups (FW, MF, DF) are determined by primary player positions
-- The database maintains complete match history since the 2017-2018 season (2018-2019 for EFL Championship)
-- Updates are rate-limited to respect data source restrictions (4 seconds per request)
+- The database maintains complete match history since the 2017-2018 season
+- Updates are rate-limited to respect data source restrictions
 - Error handling includes automatic rollback of failed database operations
 
 
@@ -689,7 +612,6 @@ Retrieve a list of top goalscorers in JSON format.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `limit` (optional): Maximum number of players to return
-- `league` (optional): League name (defaults to "Premier League")
 
 #### Response
 ```json
@@ -717,7 +639,6 @@ Retrieve a list of top assist providers in JSON format.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `limit` (optional): Maximum number of players to return
-- `league` (optional): League name (defaults to "Premier League")
 
 #### Response
 ```json
