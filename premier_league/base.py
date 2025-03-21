@@ -397,7 +397,7 @@ class BaseDataSetScrapper:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
         results = self.get_list_by_xpath(
-            self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress
+            self.pages, xpath=xpath, clean=clean, show_progress=show_progress
         )
 
         if flatten:
