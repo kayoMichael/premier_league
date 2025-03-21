@@ -14,8 +14,12 @@ from reportlab.platypus import Table, TableStyle
 
 from premier_league.base import BaseScrapper
 
-from ..utils.methods import (export_to_csv, export_to_dict, export_to_json,
-                             remove_qualification_relegation_and_css)
+from ..utils.methods import (
+    export_to_csv,
+    export_to_dict,
+    export_to_json,
+    remove_qualification_relegation_and_css,
+)
 from ..utils.url import RANKING_URL
 from ..utils.xpath import RANKING
 
@@ -399,7 +403,6 @@ class RankingTable(BaseScrapper):
         ]
         for index, tournament in enumerate(qualified.keys()):
             for team in qualified[tournament]:
-
                 try:
                     team_index = self.ranking_list.index(
                         [i for i in self.ranking_list if team in i][0]

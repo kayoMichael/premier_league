@@ -5,7 +5,6 @@ from ...utils.methods import export_to_dict
 
 
 class TransferService:
-
     @staticmethod
     def get_all_current_teams(league: str, season: str = None):
         from premier_league import Transfers

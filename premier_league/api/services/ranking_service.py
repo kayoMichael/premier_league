@@ -2,7 +2,6 @@ import os
 
 
 class RankingService:
-
     @staticmethod
     def get_ranking(league: str, season: str = None, header: str = None):
         from premier_league import RankingTable

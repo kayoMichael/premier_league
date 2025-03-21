@@ -4,7 +4,7 @@
 premier_league Package scraps data from various sites to provide useful information about the Premier League.
 
 ## Deployments
-There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda_function directories. 
+There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda_function directories.
 ## Running the Flask API
 
 
@@ -191,12 +191,12 @@ Each game statistics record includes detailed metrics broken down by position gr
     "id": 1,
     "game_id": "2024_PL_001",
     "team_id": "TEAM_001",
-    
+
     # Expected goals and assists
     "xG": 2.3,
     "xA": 1.8,
     "xAG": 1.5,
-    
+
     # Shots
     "shots_total_FW": 8,
     "shots_total_MF": 5,
@@ -204,7 +204,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "shots_on_target_FW": 4,
     "shots_on_target_MF": 2,
     "shots_on_target_DF": 0,
-    
+
     # Chance creation
     "shot_creating_chances_FW": 6,
     "shot_creating_chances_MF": 8,
@@ -212,7 +212,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "goal_creating_actions_FW": 2,
     "goal_creating_actions_MF": 3,
     "goal_creating_actions_DF": 1,
-    
+
     # Passing Stats
     "passes_completed_FW": 125,
     "passes_completed_MF": 245,
@@ -225,7 +225,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "passes_into_penalty_area": 18,
     "crosses_into_penalty_area": 15,
     "progressive_passes": 35,
-    
+
     # Defensive Stats
     "tackles_won_FW": 3,
     "tackles_won_MF": 8,
@@ -243,7 +243,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "clearances_MF": 3,
     "clearances_DF": 15,
     "errors_leading_to_goal": 0,
-    
+
     # Possession Stats
     "possession_rate": 58,
     "touches_FW": 145,
@@ -277,7 +277,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "miss_controlled_FW": 3,
     "miss_controlled_MF": 2,
     "miss_controlled_DF": 1,
-    
+
     # Goalkeeping Stats
     "save_percentage": 75.0,
     "saves": 4,
@@ -285,7 +285,7 @@ Each game statistics record includes detailed metrics broken down by position gr
     "passes_completed_GK": 22,
     "crosses_stopped": 3,
     "passes_40_yard_completed_GK": 8,
-    
+
     # Other Match Stats
     "yellow_card": 2,
     "red_card": 0,
@@ -415,7 +415,7 @@ The ranking data is structured as a list of lists, where each inner list contain
 9. Goal difference
 10. Points
 
-Example: 
+Example:
 ```python
 [
     ["Position", "Team", "MP", "W", "D", "L", "GF", "GA", "GD", "Points"],
@@ -1186,7 +1186,7 @@ Download transfer data as a JSON file.
 | transfer_type | string | No       | Type of transfers to include     | "both"      |
 | league        | string | Yes*     | Target league (Defaults to PL)   | "Serie A"   |
 
-\* Required for all transfer-related endpoints except `/all_teams`  
+\* Required for all transfer-related endpoints except `/all_teams`
 \** Required only for file export endpoints
 
 ## ❌ Error Code
