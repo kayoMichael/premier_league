@@ -38,7 +38,7 @@ class PlayerSeasonLeaders(BaseScrapper):
         stat_type: Literal["G", "A"],
         target_season: Optional[str] = None,
         league: Optional[str] = "Premier League",
-        cache: bool = True
+        cache: Optional[bool] = True,
     ):
         """
         Initialize the PlayerSeasonLeaders object.
@@ -56,7 +56,7 @@ class PlayerSeasonLeaders(BaseScrapper):
             url=self.stat_url,
             target_season=target_season,
             season_limit=self.season_limit,
-            cache=cache
+            cache=cache,
         )
         self.page = self.request_url_page()
         self._season_top_players_list = self._init_top_stats_table()
@@ -174,8 +174,8 @@ class PlayerSeasonLeaders(BaseScrapper):
             path (str): The path to save the PDF file
         """
         pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
-        pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
         os.makedirs(path, exist_ok=True)
+        pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
 
         # Set up the title
         try:
@@ -213,6 +213,7 @@ class PlayerSeasonLeaders(BaseScrapper):
 
             pdf.save()
         except Exception:
-            os.removedirs(path)
+            if os.path.exists(path) and not os.listdir(path):
+                os.rmdir(path)
             traceback.print_exc()
             raise Exception

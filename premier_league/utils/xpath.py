@@ -11,7 +11,7 @@ class RANKING:
     UEFA_WINNER: str = (
         "//table[contains(@class, 'infobox vcalendar')]//tbody//tr[.//th[contains(text(), 'Champions')]]//td//text()"
     )
-    TEAMS: str =(
+    TEAMS: str = (
         "//table[.//tr[1]/*[1][contains(normalize-space(), 'Pos')]]//tr[position() > 1]/th[1]//text()[normalize-space()]"
     )
 

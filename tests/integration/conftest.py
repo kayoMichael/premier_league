@@ -1,5 +1,6 @@
 import pytest
 
+
 def pytest_addoption(parser):
     parser.addoption(
         "--force-live",
@@ -8,9 +9,11 @@ def pytest_addoption(parser):
         help="Update VCR cassettes with live data",
     )
 
+
 @pytest.fixture(scope="session")
 def force_live(request):
     return request.config.getoption("--force-live")
+
 
 @pytest.fixture(scope="module")
 def vcr_config(force_live):

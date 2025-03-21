@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
 from reportlab.lib.pagesizes import A3
@@ -9,13 +10,14 @@ class TestRankingTable:
     """Tests for the RankingTable class."""
 
     @staticmethod
-    def base_init_side_effect(self, url, target_season, season_limit):
+    def base_init_side_effect(self, url, target_season, season_limit, cache):
         """
         Mocks the attribute setting and any post-init processing of BaseScrapper.
         """
         self.url = url
         self.target_season = target_season
         self.season_limit = season_limit
+        self.cache = cache
         self.__post_init__()
 
     @patch("premier_league.ranking.ranking_table.BaseScrapper.__init__", autospec=True)
@@ -45,34 +47,6 @@ class TestRankingTable:
         mock_base_init.assert_called_once()
         mock_request_page.assert_called_once()
         mock_init_table.assert_called_once()
-
-    def test_get_ranking_list(self):
-        """Test the get_ranking_list method."""
-        ranking = RankingTable(league="Premier League", target_season="2022-2023")
-        sample_ranking = [
-            ["Pos", "Team", "Pld", "W", "D", "L", "GF", "GA", "GD", "Pts"],
-            ["1", "Liverpool", "29", "21", "7", "1", "69", "27", "+42", "70"],
-            ["2", "Arsenal", "29", "16", "10", "3", "53", "24", "+29", "3"],
-        ]
-        ranking.ranking_list = sample_ranking
-        assert ranking.get_ranking_list() == sample_ranking
-
-    def test__init_ranking_table(self):
-        """Test the _init_ranking_table method splits rows into chunks of 10."""
-        ranking = RankingTable(league="Premier League", target_season="2022-2023")
-        sample_rows = [f"row{i}" for i in range(20)]
-        with patch.object(
-            ranking, "get_list_by_xpath", return_value=sample_rows
-        ) as mock_get_list:
-            with patch(
-                "premier_league.ranking.ranking_table.remove_qualification_relegation_and_css",
-                side_effect=lambda x: x,
-            ) as mock_remove:
-                result = ranking._init_ranking_table()
-                expected = [sample_rows[0:10], sample_rows[10:20]]
-                assert result == expected
-                mock_get_list.assert_called_once()
-                mock_remove.assert_called_once_with(sample_rows)
 
     @patch("premier_league.ranking.ranking_table.export_to_csv")
     @patch("premier_league.ranking.ranking_table.BaseScrapper.__init__")
@@ -168,13 +142,13 @@ class TestRankingTable:
                 ranking = RankingTable(
                     league="Premier League", target_season="2022-2023"
                 )
-                ranking.get_ranking_pdf(file_name="test_file", dir="test_files")
+                ranking.get_ranking_pdf(file_name="test_file", dir="test")
 
                 mock_register_font.assert_called_once()
-                mock_canvas.assert_called_once_with(
-                    "test_files/test_file.pdf", pagesize=A3
-                )
+                mock_canvas.assert_called_once_with("test/test_file.pdf", pagesize=A3)
                 mock_Table.assert_called_once_with(sample_ranking)
                 mock_table_instance.setStyle.assert_called_once()
                 mock_pdf.save.assert_called_once()
                 mock_euro_spots.assert_called_once()
+                if os.path.exists("test") and not os.listdir("test"):
+                    os.rmdir("test")

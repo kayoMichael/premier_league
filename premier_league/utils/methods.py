@@ -15,6 +15,7 @@ def clean_xml_text(text: Union[str, list]) -> str:
 
     return text.strip().replace("\xa0", "")
 
+
 def is_float_string(s: str) -> bool:
     try:
         float(s)
@@ -22,12 +23,38 @@ def is_float_string(s: str) -> bool:
     except ValueError:
         return False
 
+
 def remove_qualification_relegation_and_css(data, teams):
-    potential_header = ["Pos", "Team", "Pld", "W", "D", "L", "GF", "GA", "GD", "Pts", "GAv", "GR", "GRA"]
+    potential_header = [
+        "Pos",
+        "Team",
+        "Pld",
+        "W",
+        "D",
+        "L",
+        "GF",
+        "GA",
+        "GD",
+        "Pts",
+        "GAv",
+        "GR",
+        "GRA",
+    ]
     result = []
     partition = []
     length = len(data)
-    cycle = ["digit", "team", "digit", "digit", "digit", "digit", "digit", "digit", "+digit", "digit"]
+    cycle = [
+        "digit",
+        "team",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "+digit",
+        "digit",
+    ]
     header = []
     counter = 0
     index = 0

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class PredictorURL:
     BASE_URLS = {
         "Premier League": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
@@ -19,11 +20,17 @@ class PredictorURL:
 
 class RANKING_URL:
     BASE_URLS = {
-        "premier league": {1992: "https://en.wikipedia.org/wiki/{SEASON}_Premier_League", 1947: "https://en.wikipedia.org/wiki/{SEASON}_Football_League_First_Division"},
+        "premier league": {
+            1992: "https://en.wikipedia.org/wiki/{SEASON}_Premier_League",
+            1947: "https://en.wikipedia.org/wiki/{SEASON}_Football_League_First_Division",
+        },
         "la liga": {1929: "https://en.wikipedia.org/wiki/{SEASON}_La_Liga"},
         "serie a": {1929: "https://en.wikipedia.org/wiki/{SEASON}_Serie_A"},
-        "ligue 1": {2002: "https://en.wikipedia.org/wiki/{SEASON}_Ligue_1", 1945: "https://en.wikipedia.org/wiki/{SEASON}_French_Division_1"},
-        "bundesliga": {1963: "https://en.wikipedia.org/wiki/{SEASON}_Bundesliga"}
+        "ligue 1": {
+            2002: "https://en.wikipedia.org/wiki/{SEASON}_Ligue_1",
+            1945: "https://en.wikipedia.org/wiki/{SEASON}_French_Division_1",
+        },
+        "bundesliga": {1963: "https://en.wikipedia.org/wiki/{SEASON}_Bundesliga"},
     }
 
     @classmethod
@@ -41,7 +48,9 @@ class RANKING_URL:
 
             seasons = cls.BASE_URLS[league].keys()
             if min(seasons) > target_season:
-                raise ValueError(f"Class Does not Support Season that is less than {min(seasons)}")
+                raise ValueError(
+                    f"Class Does not Support Season that is less than {min(seasons)}"
+                )
             if 1939 <= target_season <= 1945:
                 raise ValueError("Class Does not Support WWII soccer seasons.")
             for season in seasons:

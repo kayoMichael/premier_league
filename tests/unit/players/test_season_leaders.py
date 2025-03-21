@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
@@ -9,10 +10,11 @@ class TestPlayerSeasonLeaders:
     """Tests for the PlayerSeasonLeaders class."""
 
     @staticmethod
-    def base_init_side_effect(self, url, target_season, season_limit):
+    def base_init_side_effect(self, url, target_season, season_limit, cache):
         self.url = url
         self.target_season = target_season
         self.season_limit = season_limit
+        self.cache = cache
         self.__post_init__()
 
     @patch("premier_league.players.season_leaders.BaseScrapper.__init__", autospec=True)
@@ -338,9 +340,10 @@ class TestPlayerSeasonLeaders:
                 )
 
                 player_leaders.get_top_stats_pdf(file_name="test_file", path="test")
-
                 mock_register_font.assert_called_once()
                 mock_canvas.assert_called_once()
                 mock_table.assert_called_once_with(mock_player_data[:22])
                 mock_table_instance.setStyle.assert_called_once()
                 mock_pdf.save.assert_called_once()
+                if os.path.exists("test") and not os.listdir("test"):
+                    os.rmdir("test")

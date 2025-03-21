@@ -67,7 +67,11 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
-        teams = list(filter(lambda x: x not in ('(R)', '(C)'), self.get_list_by_xpath(RANKING.TEAMS)))
+        teams = list(
+            filter(
+                lambda x: x not in ("(R)", "(C)"), self.get_list_by_xpath(RANKING.TEAMS)
+            )
+        )
         ranking_rows = remove_qualification_relegation_and_css(
             self.get_list_by_xpath(RANKING.CURRENT_RANKING), teams
         )

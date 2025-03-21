@@ -45,6 +45,7 @@ class Transfers(BaseScrapper):
         self,
         target_season: Optional[str] = None,
         league: Optional[str] = "premier league",
+        cache: Optional[bool] = True,
     ):
         """
         Initialize the Transfers object.
@@ -57,9 +58,28 @@ class Transfers(BaseScrapper):
         super().__init__(
             TRANSFERS_URL.get(self.league),
             target_season=target_season,
+            cache=cache,
+            season_limit=self.find_season_limit(),
         )
         self.page = self.request_url_page()
         self._season_top_players = self._init_transfers_table()
+
+    def find_season_limit(self):
+        """
+        Find the season limit for the given league.
+
+        Returns:
+            int: The season limit for the given league.
+        """
+
+        season_limit_map = {
+            "premier league": 1946,
+            "la liga": 1928,
+            "serie a": 1946,
+            "ligue 1": 1945,
+            "bundesliga": 1963,
+        }
+        return season_limit_map[self.league.lower()]
 
     def _init_transfers_table(self) -> dict[str, list[list[list[str]]]]:
         """
