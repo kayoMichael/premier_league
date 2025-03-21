@@ -33,5 +33,5 @@ setup(
         "tqdm==4.67.1",
     ],
     include_package_data=True,
-    python_requires=">=3.11",
+    python_requires=">=3.9",
 )
