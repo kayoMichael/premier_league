@@ -17,6 +17,7 @@ setup(
     install_requires=[
         "reportlab==4.0.4",
         "requests==2.28.1",
+        "requests-cache==1.2.1",
         "lxml==4.9.1",
         "beautifulsoup4>=4.11.0",
         "prettytable==3.11.0",

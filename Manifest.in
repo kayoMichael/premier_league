@@ -1,5 +1,6 @@
 include README.md
-exclude test/*
+exclude tests/*
+exclude requirements-test.txt
 global-exclude *.pyc
 global-exclude __pycache__/*
 include premier_league/data/*.sql
