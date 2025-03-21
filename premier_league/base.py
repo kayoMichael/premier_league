@@ -11,7 +11,7 @@ import requests
 import requests_cache
 from bs4 import BeautifulSoup
 from lxml import etree
-from requests import Response
+from requests import Response, Session
 from tqdm import tqdm
 
 from premier_league.utils.methods import clean_xml_text
@@ -45,7 +45,7 @@ class BaseScrapper:
     cache: bool = field(default=True)
     season_limit: int = field(default=1992)
     expire_cache: int = field(default=7200)
-    session: Union[requests_cache.CachedSession, requests] = field(
+    session: Union[requests_cache.CachedSession, Session] = field(
         default=None, init=False
     )
 
