@@ -9,7 +9,18 @@ provider:
       Action:
         - s3:PutObject
         - s3:GetObject
+  environment:
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'premier-league-bucket'}
 
+package:
+  include:
+    - ../players/**
+    - ../ranking/**
+    - ../transfers/**
+  exclude:
+    - ../**/__pycache__/**
+    - ../**/*.pyc
+    - ../**/*.pyo
 
 functions:
   TransferPremierLeagueData:

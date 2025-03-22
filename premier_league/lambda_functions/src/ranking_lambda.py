@@ -1,4 +1,6 @@
-from premier_league import RankingTable
+import os
+
+from ranking.ranking_table import RankingTable
 
 from .utils.methods import (
     export_to_csv,
@@ -6,6 +8,8 @@ from .utils.methods import (
     generate_http_response,
     save_to_s3,
 )
+
+S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 
 
 class RankingLambda(RankingTable):
@@ -15,14 +19,13 @@ class RankingLambda(RankingTable):
         season,
         filename,
         header,
-        s3_name: None = "premier-league-data",
         league=None,
     ):
         super().__init__(league, season)
         self.filename = filename
         self.path = path
         self.header = header
-        self.s3_name = s3_name
+        self.s3_name = (S3_BUCKET_NAME,)
 
     def handle_request(self):
         if self.path == "/ranking":

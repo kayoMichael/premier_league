@@ -1,4 +1,6 @@
-from premier_league import PlayerSeasonLeaders
+import os
+
+from players.season_leaders import PlayerSeasonLeaders
 
 from .utils.methods import (
     export_to_csv,
@@ -6,6 +8,8 @@ from .utils.methods import (
     generate_http_response,
     save_to_s3,
 )
+
+S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 
 
 class PlayerLambda(PlayerSeasonLeaders):
@@ -18,14 +22,13 @@ class PlayerLambda(PlayerSeasonLeaders):
         limit=None,
         header=None,
         league=None,
-        s3_name="premier-league-data",
     ):
         super().__init__(stat_type, season, league)
         self.filename = filename
         self.path = path
         self.limit = limit
         self.header = header
-        self.s3_name = s3_name
+        self.s3_name = (S3_BUCKET_NAME,)
 
     def handle_request(self):
         if self.path == "/player_ranking":

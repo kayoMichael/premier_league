@@ -13,8 +13,6 @@ class TestPlayersRoutes:
     )
     def test_get_scorers(self, mock_get_goals, mock_player_goals_data, client):
         """Test GET /players/goals endpoint."""
-        # Mock the services response
-
         mock_get_goals.return_value = (mock_player_goals_data, 200)
 
         # Test without parameters
@@ -48,7 +46,6 @@ class TestPlayersRoutes:
     )
     def test_get_assists(self, mock_get_assists, mock_player_assists_data, client):
         """Test GET /players/assists endpoint."""
-        # Mock the services response
         mock_get_assists.return_value = (mock_player_assists_data, 200)
 
         # Test without parameters
@@ -68,8 +65,6 @@ class TestPlayersRoutes:
     )
     def test_get_scorers_csv(self, mock_get_csv, create_temp_file, client, tmp_path):
         """Test GET /players/goals/csv_file endpoint."""
-
-        # Mock the services response
         mock_get_csv.side_effect = lambda *args, **kwargs: (
             create_temp_file(
                 "test_goals.csv",
@@ -116,8 +111,6 @@ class TestPlayersRoutes:
     )
     def test_get_assists_csv(self, mock_get_csv, create_temp_file, client, tmp_path):
         """Test GET /players/assists/csv_file endpoint."""
-
-        # Mock the services response
         mock_get_csv.side_effect = lambda *args, **kwargs: (
             create_temp_file(
                 "test_assists.csv",
@@ -166,8 +159,6 @@ class TestPlayersRoutes:
         self, mock_get_json, mock_player_goals_data, create_temp_file, client, tmp_path
     ):
         """Test GET /players/goals/json_file endpoint."""
-
-        # Mock the services response
         mock_get_json.side_effect = lambda *args, **kwargs: (
             create_temp_file("test_goals.json", str(mock_player_goals_data)),
             200,
@@ -218,8 +209,6 @@ class TestPlayersRoutes:
         tmp_path,
     ):
         """Test GET /players/assists/json_file endpoint."""
-
-        # Mock the services response
         mock_get_json.side_effect = lambda *args, **kwargs: (
             create_temp_file("test_assists.json", str(mock_player_assists_data)),
             200,

@@ -5,7 +5,7 @@ from xml.etree.ElementTree import ElementTree
 
 import pandas as pd
 from lxml import etree
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import aliased, joinedload
 from sqlalchemy.sql import exists
 
@@ -26,7 +26,11 @@ class MatchStatistics(BaseDataSetScrapper):
     as a CSV file for further analysis or model training.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        db_filename: Optional[str] = "premier_league.db",
+        db_directory: Optional[str] = "data",
+    ):
         """
         Initialize the PLPredictor instance.
 
@@ -36,7 +40,7 @@ class MatchStatistics(BaseDataSetScrapper):
         super().__init__()
         self.current_season = None
         self.urls = []
-        self.session = init_db()
+        self.session = init_db(db_filename, db_directory)
         self.leagues = (
             self.session.query(League)
             .with_entities(
@@ -171,6 +175,9 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             List[str]: A list of all League names in the database.
         """
+
+        # since pylint cannot detect named tuples
+        # pylint: disable=no-member
         return [league.name for league in self.leagues]
 
     def get_all_teams(self) -> List[str]:
@@ -210,6 +217,19 @@ class MatchStatistics(BaseDataSetScrapper):
         )
 
         return [game.to_dict(include_relationships=True) for game in games]
+
+    def get_total_game_count(self):
+        """
+        Retrieve the total number of games stored in the database.
+
+        Returns:
+            int: The total number of games in the database.
+        """
+        # pylint: disable=not-callable
+        stmt = select(func.count()).select_from(
+            Game
+        )  # since pylint cannot detect proxy objects
+        return self.session.execute(stmt).scalar_one()
 
     def get_games_by_season(self, season: str, match_week: int) -> List[dict]:
         """
@@ -261,7 +281,6 @@ class MatchStatistics(BaseDataSetScrapper):
             query = query.filter(
                 (Game.home_team_id == team_id) | (Game.away_team_id == team_id)
             )
-
         games = query.order_by(Game.date.desc()).limit(limit).all()
 
         return [game.to_dict(include_relationships=True) for game in games]
@@ -300,6 +319,7 @@ class MatchStatistics(BaseDataSetScrapper):
     def update_data_set(self):
         """
         Update the dataset by scraping new game data and updating league information.
+        This Method will Take a Considerable amount of time to run due to rate limit restrictions.
 
         This method:
             - Determines the current season based on the current date.
@@ -320,9 +340,15 @@ class MatchStatistics(BaseDataSetScrapper):
             self.current_season = f"{current_year - 1}-{current_year}"
 
         for league in self.leagues:
-            update_to_date_year = int(league.up_to_date_season.split("-")[0])
+            # since pylint cannot detect named tuples
+            update_to_date_year = int(
+                # pylint: disable=no-member
+                league.up_to_date_season.split("-")[0]
+            )
             for i in range(update_to_date_year, int(self.current_season.split("-")[1])):
-                url = PredictorURL.get(f"{i}-{i + 1}", league.name)
+                url = PredictorURL.get(
+                    f"{i}-{i + 1}", league.name  # pylint: disable=no-member
+                )
                 self.urls.append(url)
 
         self.pages = self.scrape_and_process_all(

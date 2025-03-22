@@ -8,10 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from .models.league import League
 
 
-def init_db(
-    db_filename: str = "premier_league.db",
-    db_directory: str = "data",
-) -> Session:
+def init_db(db_filename: str, db_directory: str) -> Session:
     """
     Initialize the database and seed initial data
     Args:
@@ -20,6 +17,9 @@ def init_db(
     Returns:
         SQLAlchemy session object
     """
+    if db_directory is None or db_filename is None:
+        raise ValueError("db_filename and db_directory must not be None Value")
+
     data_dir = os.path.join(os.getcwd(), db_directory)
     os.makedirs(data_dir, exist_ok=True)
 
