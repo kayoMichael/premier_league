@@ -1,34 +1,23 @@
-# Premier League Data Tool
+# Premier League Data Library
 
-### Python Package
-premier_league Package scraps data from various sites to provide useful information about the Premier League.
+![Tests](https://github.com/kayoMichael/premier_league/actions/workflows/ci.yml/badge.svg)
+![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12-blue)
+[![PyPI version](https://img.shields.io/pypi/v/premier_league.svg)](https://pypi.org/project/premier-league/)
 
-## Deployments
-There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda_function directories.
-## Running the Flask API
+A comprehensive Python library for accessing and analyzing data for the Top 5 European Leagues, including match statistics, player leaders, and transfer information. The library provides methods to rapidly expose them as an API as well as Create Training Data for ML related Analysis.
 
+## Installation
 
-### Locally
+```bash
+pip install premier_league
+````
+
+## Local Development
+Anyone is Welcomed to Contribute and Fix an Exisiting Issue or a new Problem
+```bash
+pip install -e .
+pip install -r requirements-test.txt
 ```
-from premier_league import run_server
-
-run_server()
-```
-
-## Deploying to AWS Lambda (Serverless Framework)
-Assuming A Valid AWS Account is Configured
-
-### Required IAM Role
-- s3:PutObject
-- s3:GetObject
-
-```commandline
-npm install -g serverless
-npm install -g serverless-python-requirements
-python -m premier_league.lamdba_functions.deploy --aws-profile ${aws profile} --region ${region}
-```
-
-
 
 ## Features
 
@@ -188,13 +177,102 @@ Each game statistics record includes detailed metrics broken down by position gr
 ### Sample Game Statistics Output
 ```python
 {
-    "xG": 2.3,
-    "shots_total_FW": 8,
-    "shots_on_target_FW": 4,
-    "passes_completed_MF": 245,
-    "tackles_won_DF": 12,
-    "possession_rate": 58,
-    # ... many more statistics
+  "id":1,
+  "game_id":"GAME_00001",
+  "team_id":"TEAM_00001",
+  "xG":2.3,
+  "xA":1.8,
+  "xAG":1.5,
+  "shots_total_FW":8,
+  "shots_total_MF":5,
+  "shots_total_DF":1,
+  "shots_on_target_FW":4,
+  "shots_on_target_MF":2,
+  "shots_on_target_DF":0,
+  "shot_creating_chances_FW":6,
+  "shot_creating_chances_MF":8,
+  "shot_creating_chances_DF":2,
+  "goal_creating_actions_FW":2,
+  "goal_creating_actions_MF":3,
+  "goal_creating_actions_DF":1,
+  "passes_completed_FW":125,
+  "passes_completed_MF":245,
+  "passes_completed_DF":180,
+  "pass_completion_percentage_FW":78.5,
+  "pass_completion_percentage_MF":89.2,
+  "pass_completion_percentage_DF":92.5,
+  "key_passes":12,
+  "passes_into_final_third":45,
+  "passes_into_penalty_area":18,
+  "crosses_into_penalty_area":15,
+  "progressive_passes":35,
+  "tackles_won_FW":3,
+  "tackles_won_MF":8,
+  "tackles_won_DF":12,
+  "dribblers_challenged_won_FW":2,
+  "dribblers_challenged_won_MF":6,
+  "dribblers_challenged_won_DF":8,
+  "blocks_FW":1,
+  "blocks_MF":4,
+  "blocks_DF":9,
+  "interceptions_FW":2,
+  "interceptions_MF":8,
+  "interceptions_DF":12,
+  "clearances_FW":0,
+  "clearances_MF":3,
+  "clearances_DF":15,
+  "errors_leading_to_goal":0,
+  "possession_rate":58,
+  "touches_FW":145,
+  "touches_MF":280,
+  "touches_DF":225,
+  "touches_att_pen_area_FW":12,
+  "touches_att_pen_area_MF":5,
+  "touches_att_pen_area_DF":1,
+  "take_ons_FW":8,
+  "take_ons_MF":10,
+  "take_ons_DF":2,
+  "successful_take_ons_FW":3,
+  "successful_take_ons_MF":6,
+  "successful_take_ons_DF":1,
+  "carries_FW":45,
+  "carries_MF":85,
+  "carries_DF":35,
+  "carries_into_penalty_area":8,
+  "total_carrying_distance_FW":450,
+  "total_carrying_distance_MF":850,
+  "total_carrying_distance_DF":250,
+  "dispossessed_FW":4,
+  "dispossessed_MF":5,
+  "dispossessed_DF":1,
+  "aerials_won_FW":6,
+  "aerials_won_MF":8,
+  "aerials_won_DF":12,
+  "aerials_lost_FW":4,
+  "aerials_lost_MF":5,
+  "aerials_lost_DF":3,
+  "miss_controlled_FW":3,
+  "miss_controlled_MF":2,
+  "miss_controlled_DF":1,
+  "save_percentage":75.0,
+  "saves":4,
+  "PSxG":1.2,
+  "passes_completed_GK":22,
+  "crosses_stopped":3,
+  "passes_40_yard_completed_GK":8,
+  "yellow_card":2,
+  "red_card":0,
+  "pens_won":0,
+  "pens_conceded":0,
+  "fouls_committed_FW":2,
+  "fouls_committed_MF":5,
+  "fouls_committed_DF":3,
+  "fouls_drawn_FW":4,
+  "fouls_drawn_MF":3,
+  "fouls_drawn_DF":1,
+  "offside_FW":3,
+  "offside_MF":1,
+  "offside_DF":0
 }
 ```
 
@@ -247,12 +325,11 @@ The database is seeded with these leagues by default:
 
 ## Notes
 
-- The database is automatically updated to include the latest available match data
+- The Database contains latest data up to a specific data. To update the database with more information. Invoke update_data_set method.
 - All statistics are sourced from official match reports
 - Position groups (FW, MF, DF) are determined by primary player positions
 - The database maintains complete match history since the 2017-2018 season
-- Updates are rate-limited to respect data source restrictions
-- Error handling includes automatic rollback of failed database operations
+- Updates are rate-limited (4 secs) to respect data source restrictions
 
 
 # RankingTable
@@ -383,7 +460,7 @@ scorers_2022 = PlayerSeasonLeaders(stat_type='G', target_season='2022-23')
 Returns processed list of top players and their statistics.
 - `limit`: Optional number of players to return (defaults to 100)
 ```python
-# Get top 10 scorers
+# Get top 10 scorers of Premier League
 scorers = PlayerSeasonLeaders(stat_type='G')
 top_10 = scorers.get_top_stats_list(limit=10)
 ```
@@ -391,7 +468,7 @@ top_10 = scorers.get_top_stats_list(limit=10)
 #### `get_top_stats_csv(file_name: str, header: str = None, limit: int = None)`
 Exports statistics to CSV format.
 ```python
-scorers = PlayerSeasonLeaders(stat_type='G')
+scorers = PlayerSeasonLeaders(stat_type='G', league="Serie A")
 scorers.get_top_stats_csv("top_scorers", header="2023-24 Season", limit=20)
 ```
 
@@ -470,6 +547,9 @@ transfers = Transfers()
 
 # Initialize for specific season and league
 transfers_2022 = Transfers(target_season="2022-23", league="La Liga")
+
+# Turn Off Caching and Fetch Fresh Data
+transfers_no_cache = Transfers(cache=False)
 
 # Print transfer table for a specific team
 transfers.print_transfer_table("Arsenal")
