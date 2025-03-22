@@ -13,10 +13,14 @@ pip install premier_league
 ````
 
 ## Local Development
-Anyone is Welcomed to Contribute and Fix an Exisiting Issue or a new Problem
+Anyone is Welcome to Contribute and Fix an Exisiting Issue or a new Problem
 ```bash
 pip install -e .
-pip install -r requirements-test.txt
+pip install -r requirements-test.txt # Only Required to run tests
+
+# Install pre-commit for style checks (Optional)
+pip install pre-commit
+pre-commit install
 ```
 
 ## Features
@@ -31,6 +35,8 @@ pip install -r requirements-test.txt
 
 📊 [Flask API Docs](#flask-api-docs)
 
+📊[Lambda Docs](#lambda)
+
 # MatchStatistics
 
 `MatchStatistics` is a class for retrieving and analyzing detailed match-level statistics in the form of ML datasets from Premier League games and other top European leagues. It provides access to extensive game data including team performance metrics, player statistics, and match events for ML Training or Analysis
@@ -40,13 +46,13 @@ pip install -r requirements-test.txt
 The data is stored in a SQLite database that is automatically initialized in the user's local directory upon first use. The database schema includes:
 
 ### Core Tables
-- **League**: Stores league information and update status
-- **Team**: Contains team details and league associations
-- **Game**: Records match details and scores
-- **GameStats**: Stores detailed match statistics
+- **League**: Stores league information and update status [Model](https://github.com/kayoMichael/premier_league/blob/main/premier_league/data/models/league.py)
+- **Team**: Contains team details and league associations [Model](https://github.com/kayoMichael/premier_league/blob/main/premier_league/data/models/team.py)
+- **Game**: Records match details and scores [Model](https://github.com/kayoMichael/premier_league/blob/main/premier_league/data/models/game.py)
+- **GameStats**: Stores detailed match statistics [Model](https://github.com/kayoMichael/premier_league/blob/main/premier_league/data/models/game_stats.py)
 
 ### Database Initialization
-
+ The database is automatically initialized on first use
 ```python
 from premier_league import MatchStatistics
 
@@ -54,7 +60,11 @@ from premier_league import MatchStatistics
 stats = MatchStatistics()
 
 # The database is automatically initialized on first use
-# Default location: user's data directory/premier_league_sqlite/premier_league.db
+# Default location: data/premier_league.db
+```
+You can override the default location. (**WARNING**: If a Database is already created then you invoke the class with the wrong file location, a new SQL dump is going to be triggered with a new sqlite database)
+```python
+stats = MatchStatistics(db_filename="custom_db_name.db", db_directory="custom_directory/my_file")
 ```
 
 ## Usage
@@ -127,9 +137,19 @@ stats.update_data_set()
 ```
 
 #### `create_dataset(output_path: str)`
-Exports the entire match statistics database to a CSV file.
+Exports match statistics database as a Machine Learning dataset in CSV format.
 ```python
-stats.create_dataset("premier_league_stats.csv")
+# Export all Data
+MatchStatistics().create_dataset("premier_league_stats.csv")
+
+# Export 800 Data
+MatchStatistics().create_dataset("premier_league_stats.csv", rows_count=800)
+```
+
+#### `get_total_game_count()`
+Retrieves the total number of games in the database.
+```python
+total_games = MatchStatistics().get_total_game_count()
 ```
 
 ## Data Format
@@ -174,7 +194,7 @@ Each game statistics record includes detailed metrics broken down by position gr
 - Cards (Yellow and Red)
 - Goalkeeper Statistics
 
-### Sample Game Statistics Output
+### Sample Game Statistics
 ```python
 {
   "id":1,
@@ -287,8 +307,8 @@ The database is automatically initialized using `init_db()` which:
 
 ```python
 def init_db(
-    db_filename: str = "premier_league.db",
-    db_directory: str = "premier_league_sqlite"
+    db_filename: str,
+    db_directory: str
 ) -> Session:
     """
     Initialize the database and seed initial data
@@ -334,7 +354,7 @@ The database is seeded with these leagues by default:
 
 # RankingTable
 
-`RankingTable` Fetches ranking data for a given premier league season and league.
+`RankingTable` Fetches ranking data for a season and league.
 
 ## Usage
 
@@ -344,8 +364,11 @@ from premier_league import RankingTable
 # Initialize the ranking table for the current season
 ranking = RankingTable()
 
-# Or specify a target season
+# Or specify a target season (None Defaults to Current Season)
 ranking = RankingTable(target_season="1995-1996")
+
+# Or specify a different league (None Defaults to Premier League)
+ranking = RankingTable(league="Serie A")
 ```
 
 ## Core Features
@@ -436,8 +459,23 @@ Example:
 
 # PlayerSeasonLeaders
 
-`PlayerSeasonLeaders` is a specialized scraper for retrieving and processing Premier League player statistics, focusing on either goals or assists for a specific season.
+`PlayerSeasonLeaders` is a specialized scraper for retrieving and processing player statistics, focusing on either goals or assists for a specific season.
 
+## Supported Leagues
+- Premier League
+- Ligue 1
+- La Liga
+- Serie A
+- Bundesliga
+
+## Supported Oldest Seasons
+- Premier League : 1997,
+- La Liga": 2008,
+- Serie A": 2010,
+- Ligue 1": 2010,
+- Bundesliga": 1988,
+
+`find_season_limit` can be invoked to find the oldest supported seasons in `SeasonPlayerLeaders` class
 
 ## Usage
 
@@ -452,6 +490,9 @@ assists = PlayerSeasonLeaders(stat_type='A')
 
 # For a specific season's data
 scorers_2022 = PlayerSeasonLeaders(stat_type='G', target_season='2022-23')
+
+# For a specific League
+scorers_ligue_1 = PlayerSeasonLeaders(stat_type='A', league="ligue 1")
 ```
 
 ## Core Features
@@ -528,14 +569,31 @@ Example:
   - Gold highlighting for the top scorer/assister
   - Limited to top 20 players
   - A3 page size for better readability
-- Data is scraped from worldfootball.net
 - Default limit for data retrieval is 100 entries
 - All export methods support optional headers and limits (except PDF which is fixed at top 20)
 
 
 # Transfers
 
-`Transfers` is a specialized scraper for retrieving and processing Premier League transfer data for teams in a specific season. It provides methods to fetch, display, and export both incoming and outgoing transfers.
+`Transfers` is a specialized scraper for retrieving and processing transfer data for teams in a specific season. It provides methods to fetch, display, and export both incoming and outgoing transfers.
+
+## Supported Leagues
+- Premier League
+- Ligue 1
+- La Liga
+- Serie A
+- Bundesliga
+
+## Supported Oldest Seasons
+- Premier League : 1946,
+- La Liga": 1928,
+- Serie A": 1946,
+- Ligue 1": 1945,
+- Bundesliga": 1963,
+
+`find_season_limit` can be invoked to find the oldest supported seasons in `SeasonPlayerLeaders` class
+
+**Disclaimer** Some Seaons are not available due to World Events (e.g. WWII)
 
 ## Usage
 
@@ -640,7 +698,7 @@ Example Data Structure:
 
 ## Notes
 
-- Team names are case-insensitive but must match the official team name
+- Team names are case-insensitive but must mirror official match names.
 - Raises `TeamNotFoundError` if specified team isn't found in the season
 - Data is scraped from worldfootball.net
 - Transfer dates are in DD/MM format
@@ -692,6 +750,7 @@ Retrieve a list of top goalscorers in JSON format.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `limit` (optional): Maximum number of players to return
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -719,6 +778,7 @@ Retrieve a list of top assist providers in JSON format.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `limit` (optional): Maximum number of players to return
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -885,6 +945,7 @@ Retrieve detailed Premier League standings with comprehensive team statistics.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `header` (optional): Include additional metadata in response
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -919,6 +980,7 @@ Retrieve a simplified version of the league standings.
 
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -941,6 +1003,7 @@ Download Premier League standings as a CSV file.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `filename` (required): Name for the exported file (without extension)
+- `league` (optional): League specification (Defaults to Premier League)
 
 ### Export JSON
 
@@ -953,6 +1016,7 @@ Download Premier League standings as a JSON file.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `filename` (required): Name for the exported file (without extension)
+- `league` (optional): League specification (Defaults to Premier League)
 
 ### Export PDF
 
@@ -960,11 +1024,12 @@ Download Premier League standings as a JSON file.
 GET /ranking/pdf_file
 ```
 
-Download Premier League standings as a formatted PDF file.
+Download League standings as a formatted PDF file.
 
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `filename` (required): Name for the exported file (without extension)
+- `league` (optional): League specification (Defaults to Premier League)
 
 ## 🔧 Common Query Parameters
 
@@ -1075,6 +1140,7 @@ Retrieve a list of all teams in the Premier League for a given season.
 
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -1100,6 +1166,7 @@ Retrieve all incoming transfers for a specific team.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `team` (required): Team name
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -1126,6 +1193,7 @@ Retrieve all outgoing transfers for a specific team.
 #### Query Parameters
 - `season` (optional): Season identifier (e.g., "2023-2024")
 - `team` (required): Team name
+- `league` (optional): League specification (Defaults to Premier League)
 
 #### Response
 ```json
@@ -1260,3 +1328,21 @@ curl -O "http://api.example.com/transfers/json_file?team=Liverpool&filename=live
 - JSON exports are properly formatted
 - Filenames are sanitized for security
 - Support for splitting incoming/outgoing transfers
+
+# Lambda
+All Flask API Endpoints can be Deployed via AWS Lambda and Serverless Framework
+
+A Preconfigured Serverless File is Rooted with the Lambda Code. All Files Created are saved in a specified S3 Bucket
+
+## Setup
+1. Get a Valid AWS Account and the following IAM Role.
+```terminal
+- s3:PutObject
+- s3:GetObject
+```
+2. Create a S3 Bucket on the AWS Comsole with a name
+3. Run the following command to deploy and specify S3 bucket name, AWS Profile and the Region. (If no S3 Bucket name is specified, it defaults to premier-league-bucket)
+```
+S3_BUCKET_NAME=${s3 bucket name} python -m premier_league.lambda_functions.deploy_premier_league --aws-profile ${AWS IAM Account name} --region ${Your Region}
+```
+4. API Endpoints information will show up once a Successful Deployment has been done.

@@ -1,11 +1,14 @@
-from premier_league import Transfers
+import os
 
+from ...transfers import Transfers
 from .utils.methods import (
     export_to_csv,
     export_to_json,
     generate_http_response,
     save_to_s3,
 )
+
+S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 
 
 class HandleLambdaRequest(Transfers):
@@ -16,7 +19,6 @@ class HandleLambdaRequest(Transfers):
         season=None,
         filename=None,
         export_type=None,
-        s3_name="premier-league-data",
         league=None,
     ):
         super().__init__(target_season=season, league=league)
@@ -24,7 +26,7 @@ class HandleLambdaRequest(Transfers):
         self.target_team = team
         self.filename = filename
         self.export_type = export_type
-        self.s3_name = s3_name
+        self.s3_name = (S3_BUCKET_NAME,)
 
     def handle_request(self):
         if self.path == "/transfers_in":
