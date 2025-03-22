@@ -7,8 +7,6 @@ from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3
 from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 
@@ -148,20 +146,19 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the PDF to (without extension).
             dir (str): The directory to save the PDF file to.
         """
-        pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
         os.makedirs(dir, exist_ok=True)
 
         try:
             pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
-            pdf.setFont("Arial", 16)
+            pdf.setFont("Helvetica", 16)
             title = f"{self.league} Table {self.season}"
-            title_width = pdf.stringWidth(title, "Arial", 16)
+            title_width = pdf.stringWidth(title, "Helvetica", 16)
 
             pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
             pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
-            pdf.setFont("Arial", 12)
+            pdf.setFont("Helvetica", 12)
             table = Table(self.ranking_list)
             if int(self.season[:4]) >= 2021 and self.league == "Premier League":
                 european_spots = self._find_european_qualification_spot()
@@ -178,7 +175,7 @@ class RankingTable(BaseScrapper):
                 ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
                 ("FONTSIZE", (0, 0), (-1, -1), 12),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
                 ("TOPPADDING", (0, 0), (-1, -1), 12),

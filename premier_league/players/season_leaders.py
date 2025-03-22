@@ -7,8 +7,6 @@ from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3
 from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 
@@ -173,21 +171,20 @@ class PlayerSeasonLeaders(BaseScrapper):
             file_name (str): The name of the file to save (without extension).
             path (str): The path to save the PDF file
         """
-        pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
         os.makedirs(path, exist_ok=True)
         pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
 
         # Set up the title
         try:
-            pdf.setFont("Arial", 16)
+            pdf.setFont("Helvetica", 16)
             main_words = "Goal Scorer" if self.stat_type == "G" else "Assist Leader"
             title = f"{self.season} Premier League Top {main_words}"
-            title_width = pdf.stringWidth(title, "Arial", 16)
+            title_width = pdf.stringWidth(title, "Helvetica", 16)
             pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
             pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
             # Create and style the table
-            pdf.setFont("Arial", 12)
+            pdf.setFont("Helvetica", 12)
             table = Table(self._season_top_players_list[:22])
 
             table_styles = [
@@ -195,7 +192,7 @@ class PlayerSeasonLeaders(BaseScrapper):
                 ("BACKGROUND", (0, 1), (-1, 1), HexColor("#FFD700")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, -1), "Arial"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
                 ("FONTSIZE", (0, 0), (-1, -1), 12),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
                 ("TOPPADDING", (0, 0), (-1, -1), 12),

@@ -294,7 +294,6 @@ class TestPlayerSeasonLeaders:
             )
 
     @patch("premier_league.players.season_leaders.canvas.Canvas")
-    @patch("premier_league.players.season_leaders.pdfmetrics.registerFont")
     @patch("premier_league.players.season_leaders.Table")
     @patch("premier_league.players.season_leaders.BaseScrapper.__init__")
     @patch("premier_league.players.season_leaders.PlayerSeasonLeaders._get_url")
@@ -305,7 +304,6 @@ class TestPlayerSeasonLeaders:
         mock_get_url,
         mock_base_init,
         mock_table,
-        mock_register_font,
         mock_canvas,
     ):
         """Test the get_top_stats_pdf method."""
@@ -340,7 +338,6 @@ class TestPlayerSeasonLeaders:
                 )
 
                 player_leaders.get_top_stats_pdf(file_name="test_file", path="test")
-                mock_register_font.assert_called_once()
                 mock_canvas.assert_called_once()
                 mock_table.assert_called_once_with(mock_player_data[:22])
                 mock_table_instance.setStyle.assert_called_once()

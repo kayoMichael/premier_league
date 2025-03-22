@@ -104,7 +104,6 @@ class TestRankingTable:
         mock_export_dict.assert_called_once_with(sample_ranking, header_1="Test Header")
 
     @patch("premier_league.ranking.ranking_table.canvas.Canvas")
-    @patch("premier_league.ranking.ranking_table.pdfmetrics.registerFont")
     @patch("premier_league.ranking.ranking_table.Table")
     @patch("premier_league.ranking.ranking_table.BaseScrapper.__init__")
     @patch("premier_league.ranking.ranking_table.RankingTable.request_url_page")
@@ -115,7 +114,6 @@ class TestRankingTable:
         mock_request_page,
         mock_base_init,
         mock_Table,
-        mock_register_font,
         mock_canvas,
     ):
         """Test the get_ranking_pdf method."""
@@ -144,7 +142,6 @@ class TestRankingTable:
                 )
                 ranking.get_ranking_pdf(file_name="test_file", dir="test")
 
-                mock_register_font.assert_called_once()
                 mock_canvas.assert_called_once_with("test/test_file.pdf", pagesize=A3)
                 mock_Table.assert_called_once_with(sample_ranking)
                 mock_table_instance.setStyle.assert_called_once()
