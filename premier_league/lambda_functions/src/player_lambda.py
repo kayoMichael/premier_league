@@ -1,6 +1,7 @@
 import os
 
-from ...players import PlayerSeasonLeaders
+from players.season_leaders import PlayerSeasonLeaders
+
 from .utils.methods import (
     export_to_csv,
     export_to_json,

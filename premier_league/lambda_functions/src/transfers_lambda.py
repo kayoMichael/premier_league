@@ -1,6 +1,7 @@
 import os
 
-from ...transfers import Transfers
+from transfers.transfers import Transfers
+
 from .utils.methods import (
     export_to_csv,
     export_to_json,

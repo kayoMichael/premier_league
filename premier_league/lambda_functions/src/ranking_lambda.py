@@ -1,6 +1,7 @@
 import os
 
-from ...ranking import RankingTable
+from ranking.ranking_table import RankingTable
+
 from .utils.methods import (
     export_to_csv,
     export_to_json,

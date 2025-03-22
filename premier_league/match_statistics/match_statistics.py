@@ -175,6 +175,9 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             List[str]: A list of all League names in the database.
         """
+
+        # since pylint cannot detect named tuples
+        # pylint: disable=no-member
         return [league.name for league in self.leagues]
 
     def get_all_teams(self) -> List[str]:
@@ -222,7 +225,10 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             int: The total number of games in the database.
         """
-        stmt = select(func.count()).select_from(Game)
+        # pylint: disable=not-callable
+        stmt = select(func.count()).select_from(
+            Game
+        )  # since pylint cannot detect proxy objects
         return self.session.execute(stmt).scalar_one()
 
     def get_games_by_season(self, season: str, match_week: int) -> List[dict]:
@@ -334,9 +340,14 @@ class MatchStatistics(BaseDataSetScrapper):
             self.current_season = f"{current_year - 1}-{current_year}"
 
         for league in self.leagues:
-            update_to_date_year = int(league.up_to_date_season.split("-")[0])
+            # since pylint cannot detect named tuples
+            update_to_date_year = int(
+                league.up_to_date_season.split("-")[0]
+            )  # pylint: disable=no-member
             for i in range(update_to_date_year, int(self.current_season.split("-")[1])):
-                url = PredictorURL.get(f"{i}-{i + 1}", league.name)
+                url = PredictorURL.get(
+                    f"{i}-{i + 1}", league.name
+                )  # pylint: disable=no-member
                 self.urls.append(url)
 
         self.pages = self.scrape_and_process_all(
