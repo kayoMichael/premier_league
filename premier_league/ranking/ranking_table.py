@@ -1,7 +1,7 @@
 import os
 import re
 import traceback
-from typing import Optional
+from typing import Optional, Union
 
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
@@ -203,7 +203,7 @@ class RankingTable(BaseScrapper):
 
     def _find_european_qualification_spot(
         self,
-    ) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
+    ) -> list[Union[tuple[str, tuple[int, int], tuple[int, int]], list]]:
         """
         Determine the European qualification spots for the current season.
 
