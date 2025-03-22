@@ -342,12 +342,13 @@ class MatchStatistics(BaseDataSetScrapper):
         for league in self.leagues:
             # since pylint cannot detect named tuples
             update_to_date_year = int(
+                # pylint: disable=no-member
                 league.up_to_date_season.split("-")[0]
-            )  # pylint: disable=no-member
+            )
             for i in range(update_to_date_year, int(self.current_season.split("-")[1])):
                 url = PredictorURL.get(
-                    f"{i}-{i + 1}", league.name
-                )  # pylint: disable=no-member
+                    f"{i}-{i + 1}", league.name  # pylint: disable=no-member
+                )
                 self.urls.append(url)
 
         self.pages = self.scrape_and_process_all(
