@@ -24,7 +24,7 @@ setup(
         "flask==3.0.0",
         "flask-caching==2.3.0",
         "flask-cors==5.0.0",
-        "flask-limiter==3.12",
+        "flask-limiter==3.11",
         "PyYAML==6.0.2",
         "gunicorn==23.0.0",
         "appdirs==1.4.4",
