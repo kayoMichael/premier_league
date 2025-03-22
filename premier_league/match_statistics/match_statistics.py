@@ -58,18 +58,15 @@ class MatchStatistics(BaseDataSetScrapper):
         Returns:
             None
         """
-        if(rows_count is not None and type(rows_count) != int):
+        if rows_count is not None and type(rows_count) != int:
             raise ValueError("rows_count must be an integer")
-        if(rows_count is not None and rows_count < 0):
+        if rows_count is not None and rows_count < 0:
             raise ValueError("rows_count must be a positive integer")
 
-        query = (
-            self.session.query(Game)
-            .options(
-                joinedload(Game.game_stats),
-                joinedload(Game.home_team),
-                joinedload(Game.away_team),
-            )
+        query = self.session.query(Game).options(
+            joinedload(Game.game_stats),
+            joinedload(Game.home_team),
+            joinedload(Game.away_team),
         )
         if rows_count is not None:
             query = query.order_by(Game.date.desc()).limit(rows_count)
@@ -466,7 +463,9 @@ class MatchStatistics(BaseDataSetScrapper):
                     else (
                         "DF"
                         if any(pos in str(x) for pos in ["CB", "LB", "RB"])
-                        else "GK" if "GK" in str(x) else "Total"
+                        else "GK"
+                        if "GK" in str(x)
+                        else "Total"
                     )
                 )
             )
@@ -508,9 +507,12 @@ class MatchStatistics(BaseDataSetScrapper):
         """
         data = {}
 
-        ST_summary, MF_summary, DF_summary, aggregate_summary = (
-            self._return_by_position_data(summary_table)
-        )
+        (
+            ST_summary,
+            MF_summary,
+            DF_summary,
+            aggregate_summary,
+        ) = self._return_by_position_data(summary_table)
         data.update(
             {
                 "xG": aggregate_summary["xG"].sum().item(),
@@ -530,9 +532,12 @@ class MatchStatistics(BaseDataSetScrapper):
             }
         )
 
-        ST_passing, MF_passing, DF_passing, aggregate_passing = (
-            self._return_by_position_data(passing_table)
-        )
+        (
+            ST_passing,
+            MF_passing,
+            DF_passing,
+            aggregate_passing,
+        ) = self._return_by_position_data(passing_table)
         data.update(
             {
                 "passes_completed_FW": ST_passing["Cmp"].sum().item(),
@@ -550,9 +555,12 @@ class MatchStatistics(BaseDataSetScrapper):
             }
         )
 
-        ST_defence, MF_defence, DF_defence, aggregate_defence = (
-            self._return_by_position_data(defence_table)
-        )
+        (
+            ST_defence,
+            MF_defence,
+            DF_defence,
+            aggregate_defence,
+        ) = self._return_by_position_data(defence_table)
         data.update(
             {
                 "tackles_won_FW": ST_defence["TklW"].sum().item(),
@@ -574,9 +582,12 @@ class MatchStatistics(BaseDataSetScrapper):
             }
         )
 
-        ST_possession, MF_possession, DF_possession, aggregate_possession = (
-            self._return_by_position_data(possession_table)
-        )
+        (
+            ST_possession,
+            MF_possession,
+            DF_possession,
+            aggregate_possession,
+        ) = self._return_by_position_data(possession_table)
         data.update(
             {
                 "possession_rate": possession,
@@ -842,7 +853,6 @@ class MatchStatistics(BaseDataSetScrapper):
             self.session.add(away_statistics)
 
             self.session.commit()
-
         except Exception as e:
             self.session.rollback()
             raise Exception(f"Error adding match data: {str(e)}")

@@ -12,3 +12,5 @@ main.py
 *.db
 .eggs/
 test/
+manual_test/
+prem_cache.sqlite

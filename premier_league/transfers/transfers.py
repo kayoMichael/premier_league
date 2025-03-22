@@ -1,11 +1,10 @@
 import re
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from prettytable import PrettyTable
 
 from premier_league.base import BaseScrapper
-from premier_league.utils.methods import (clean_xml_text, export_to_csv,
-                                          export_to_json)
+from premier_league.utils.methods import clean_xml_text, export_to_csv, export_to_json
 from premier_league.utils.xpath import PLAYERS
 
 from ..utils.url import TRANSFERS_URL
@@ -23,7 +22,7 @@ class TeamNotFoundError(Exception):
     def __init__(self, team: str, season: str, league: str):
         self.team = team
         self.season = season
-        self.league = league.title()
+        self.league = league.title() if league else "Premier League"
 
     def __str__(self):
         return f"Team '{self.team}' not found in the {self.season} {self.league} season. For all current teams, use the 'get_all_current_teams' method."
@@ -45,6 +44,7 @@ class Transfers(BaseScrapper):
         self,
         target_season: Optional[str] = None,
         league: Optional[str] = "premier league",
+        cache: Optional[bool] = True,
     ):
         """
         Initialize the Transfers object.
@@ -57,9 +57,28 @@ class Transfers(BaseScrapper):
         super().__init__(
             TRANSFERS_URL.get(self.league),
             target_season=target_season,
+            cache=cache,
+            season_limit=self.find_season_limit(),
         )
         self.page = self.request_url_page()
         self._season_top_players = self._init_transfers_table()
+
+    def find_season_limit(self):
+        """
+        Find the season limit for the given league.
+
+        Returns:
+            int: The season limit for the given league.
+        """
+
+        season_limit_map = {
+            "premier league": 1946,
+            "la liga": 1928,
+            "serie a": 1946,
+            "ligue 1": 1945,
+            "bundesliga": 1963,
+        }
+        return season_limit_map[self.league.lower()]
 
     def _init_transfers_table(self) -> dict[str, list[list[list[str]]]]:
         """
@@ -79,9 +98,10 @@ class Transfers(BaseScrapper):
                     for e in transfer.xpath(PLAYERS.TRANSFER_DATA)
                     if clean_xml_text(e)
                 ]
-                team_transfer_dict[target_team.split(" » ")[0].strip().lower()] = (
-                    player_transfers
-                )
+                team = target_team.split(" » ")[0].strip().title()
+                if "Fc" in team:
+                    team = team.replace("Fc", "FC")
+                team_transfer_dict[team] = player_transfers
             except IndexError:
                 break
 
@@ -133,9 +153,11 @@ class Transfers(BaseScrapper):
         in_table = PrettyTable()
         out_table = PrettyTable()
 
+        target_team = self.find_team(team)
+
         try:
-            transfer_in = self._season_top_players[team.lower()][0]
-            transfer_out = self._season_top_players[team.lower()][1]
+            transfer_in = self._season_top_players[target_team][0]
+            transfer_out = self._season_top_players[target_team][1]
         except KeyError:
             raise TeamNotFoundError(team, self.season, self.league)
 
@@ -163,8 +185,9 @@ class Transfers(BaseScrapper):
         Raises:
             TeamNotFoundError: If the specified team is not found in the current season.
         """
+        target_team = self.find_team(team)
         try:
-            return self._season_top_players[team.lower()][0]
+            return self._season_top_players[target_team][0]
         except KeyError:
             raise TeamNotFoundError(team, self.season, self.league)
 
@@ -181,8 +204,9 @@ class Transfers(BaseScrapper):
         Raises:
             TeamNotFoundError: If the specified team is not found in the current season.
         """
+        target_team = self.find_team(team)
         try:
-            return self._season_top_players[team.lower()][1]
+            return self._season_top_players[target_team][1]
         except KeyError:
             raise TeamNotFoundError(team, self.season, self.league)
 
@@ -261,4 +285,19 @@ class Transfers(BaseScrapper):
         Returns:
             list[str]: A list of team names.
         """
-        return [team.title() for team in self._season_top_players.keys()]
+        return [team for team in self._season_top_players.keys()]
+
+    def find_team(self, target_team: str) -> Union[str, None]:
+        """
+        Find the closest team name from a given string.
+
+        Args:
+            team (str): The team name or identifier.
+
+        Returns:
+            str | None: The team name if it exists else None.
+        """
+        for team in self._season_top_players.keys():
+            if target_team.lower().strip() in team.lower():
+                return team
+        return None

@@ -9,7 +9,7 @@ ranking_bp = Blueprint("ranking", __name__)
 
 @ranking_bp.route("/ranking", methods=["GET"])
 def get_standings():
-    """Get the Premier League standings with detailed statistics.
+    """Get the League standings with detailed statistics.
 
     This endpoint returns the current Premier League table with comprehensive team statistics.
 
@@ -26,15 +26,16 @@ def get_standings():
     season = request.args.get("season")
     header = request.args.get("header")
     league = request.args.get("league")
-    response = RankingService().get_premier_league_ranking(
-        season=season, header=header, league=league
+
+    response = RankingService().get_ranking(
+        season=season, header=header, league=league if league else "Premier League"
     )
     return jsonify(response[0]), response[1]
 
 
 @ranking_bp.route("/ranking/table", methods=["GET"])
 def get_standings_table():
-    """Get a simplified Premier League standings table.
+    """Get a simplified League standings table.
 
     This endpoint returns a streamlined version of the league table focused on essential stats.
 
@@ -49,14 +50,16 @@ def get_standings_table():
     """
     season = request.args.get("season")
     league = request.args.get("league")
-    response = RankingService().get_premier_league_ranking_list(season, league)
+    response = RankingService().get_ranking_list(
+        season=season, league=league if league else "Premier League"
+    )
     return jsonify(response[0]), response[1]
 
 
 @ranking_bp.route("/ranking/csv_file", methods=["GET"])
 @safe_file_cleanup
 def get_standings_csv():
-    """Export Premier League standings to a CSV file.
+    """Export League standings to a CSV file.
 
     This endpoint generates and returns a CSV file containing the complete league table.
 
@@ -81,8 +84,10 @@ def get_standings_csv():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_csv(
-        safe_filename, season, league
+    response = RankingService().get_ranking_csv(
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -125,8 +130,10 @@ def get_standings_json():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_json(
-        safe_filename, season, league
+    response = RankingService().get_ranking_json(
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 
@@ -170,8 +177,10 @@ def get_standings_pdf():
 
     # Secure the filename to prevent directory traversal attacks
     safe_filename = secure_filename(file_name)
-    response = RankingService().get_premier_league_ranking_pdf(
-        safe_filename, season, league
+    response = RankingService().get_ranking_pdf(
+        file_name=safe_filename,
+        season=season,
+        league=league if league else "Premier League",
     )
     g.temp_state["file_path"] = response[0]
 

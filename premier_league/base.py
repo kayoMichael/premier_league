@@ -8,9 +8,10 @@ from typing import Optional, Union
 from xml.etree import ElementTree
 
 import requests
+import requests_cache
 from bs4 import BeautifulSoup
 from lxml import etree
-from requests import Response
+from requests import Response, Session
 from tqdm import tqdm
 
 from premier_league.utils.methods import clean_xml_text
@@ -30,6 +31,10 @@ class BaseScrapper:
         page (ElementTree): The parsed XML representation of the web page.
         season (str): The processed season for scraping data.
         target_season (str): The target season (parameter) for scraping data.
+        cache (bool): Whether to cache the HTTP requests. Defaults to True.
+        season_limit (int): The lower limit for the season. Defaults to 1992.
+        expire_cache (int): The expiry time for the cache in seconds. Defaults to 7200.
+        session (Union[requests_cache.CachedSession, requests]): The requests session object.
     """
 
     url: str
@@ -37,6 +42,12 @@ class BaseScrapper:
     page: ElementTree = field(default_factory=lambda: None, init=False)
     season: str = field(default=None, init=False)
     target_season: str = field(default=None)
+    cache: bool = field(default=True)
+    season_limit: int = field(default=1992)
+    expire_cache: int = field(default=7200)
+    session: Union[requests_cache.CachedSession, Session] = field(
+        default=None, init=False
+    )
 
     def __post_init__(self):
         """
@@ -47,6 +58,13 @@ class BaseScrapper:
         """
         if not self.requires_season:
             return
+
+        if self.cache:
+            self.session = requests_cache.CachedSession(
+                "prem_cache", expire_after=self.expire_cache
+            )
+        else:
+            self.session = requests.session()
 
         current_date = datetime.now()
         if not self.target_season:
@@ -71,9 +89,9 @@ class BaseScrapper:
                 )
             elif int(self.target_season[:4]) > current_date.year:
                 raise ValueError("Invalid target_season. It cannot be in the future.")
-            elif int(self.target_season[:4]) < 1992:
+            elif int(self.target_season[:4]) < self.season_limit:
                 raise ValueError(
-                    "Invalid target_season. This library only supports seasons after 1992-1993. It cannot be before 1992."
+                    f"Invalid target_season. This Class only supports seasons after {self.season_limit}/{self.season_limit + 1}. It cannot be before {self.season_limit}."
                 )
             if self.url[-1] != "/":
                 self.season = f"{self.target_season[:4]}-{self.target_season[7:]}"
@@ -93,7 +111,7 @@ class BaseScrapper:
             HTTPException: If an error occurs during the request.
         """
         try:
-            response: Response = requests.get(
+            response: Response = self.session.get(
                 url=self.url,
                 headers={
                     "User-Agent": (
@@ -118,6 +136,12 @@ class BaseScrapper:
         response: Response = self.make_request()
         return BeautifulSoup(markup=response.content, features="html.parser")
 
+    def clear_cache(self):
+        """
+        Clear the cache for the current session.
+        """
+        self.session.cache.clear()
+
     @staticmethod
     def convert_to_xml(bsoup: BeautifulSoup):
         """
@@ -129,20 +153,21 @@ class BaseScrapper:
         Returns:
             ElementTree: The converted XML tree.
         """
-        return etree.HTML(str(bsoup))
+        return etree.HTML(bsoup.encode())
 
     @staticmethod
-    def additional_scrapper(additional_url):
+    def additional_scrapper(additional_url: str, cache: Optional[bool] = True):
         """
         Create a new BaseScrapper instance for an additional URL without creating a new object.
 
         Args:
             additional_url (str): The URL to scrape.
+            cache (bool): Whether to cache the HTTP requests. Defaults to True.
 
         Returns:
             BaseScrapper: A new BaseScrapper instance with the page loaded.
         """
-        scrapper = BaseScrapper(url=additional_url, requires_season=False)
+        scrapper = BaseScrapper(url=additional_url, requires_season=False, cache=cache)
         scrapper.page = BaseScrapper.request_url_page(scrapper)
         return scrapper
 
@@ -372,7 +397,7 @@ class BaseDataSetScrapper:
             Optional[list]: A list of matching elements, or an empty list if no matches are found.
         """
         results = self.get_list_by_xpath(
-            self.pages, xpath=xpath, clean=clean, desc=desc, show_progress=show_progress
+            self.pages, xpath=xpath, clean=clean, show_progress=show_progress
         )
 
         if flatten:

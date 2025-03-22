@@ -37,6 +37,11 @@ def safe_file_cleanup(func):
                         current_app.logger.info(
                             f"Successfully deleted file: {file_path}"
                         )
+                    if os.path.exists("files") and any(os.scandir("files")):
+                        os.removedirs("files")
+                        current_app.logger.info(
+                            f"Cleaned up directory after error: files"
+                        )
                 except Exception as e:
                     current_app.logger.error(
                         f"Error deleting file {file_path}: {str(e)}"
@@ -46,7 +51,7 @@ def safe_file_cleanup(func):
             return result
 
         except Exception as e:
-            # Clean up file if something went wrong before sending
+            # Clean up file and directory if something went wrong before sending
             if file_path and os.path.exists(file_path):
                 try:
                     os.remove(file_path)
@@ -55,6 +60,9 @@ def safe_file_cleanup(func):
                     current_app.logger.error(
                         f"Error during cleanup: {str(cleanup_error)}"
                     )
+            if os.path.exists("files") and any(os.scandir("files")):
+                os.removedirs("files")
+                current_app.logger.info(f"Cleaned up directory after error: files")
             raise e
 
     return wrapper

@@ -2,7 +2,7 @@ import csv
 import json
 import os
 import re
-from typing import Union
+from typing import Optional, Union
 
 
 def remove_duplicates(seq) -> list:
@@ -16,42 +16,78 @@ def clean_xml_text(text: Union[str, list]) -> str:
     return text.strip().replace("\xa0", "")
 
 
-def remove_qualification_relegation_and_css(data):
+def is_float_string(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def remove_qualification_relegation_and_css(data, teams):
+    potential_header = [
+        "Pos",
+        "Team",
+        "Pld",
+        "W",
+        "D",
+        "L",
+        "GF",
+        "GA",
+        "GD",
+        "Pts",
+        "GAv",
+        "GR",
+        "GRA",
+    ]
     result = []
-    skip_next = False
+    partition = []
+    length = len(data)
+    cycle = [
+        "digit",
+        "team",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "digit",
+        "+digit",
+        "digit",
+    ]
+    header = []
     counter = 0
+    index = 0
+    for i in range(length):
+        if data[i] in potential_header:
+            header.append(data[i])
+            index += 1
+        if len(header) == 10:
+            if header[8] != "GD":
+                cycle[8] = "float"
+            result.append(header)
+            break
+    for i in range(index, len(data)):
+        if counter == 10:
+            counter = 0
+            result.append(partition)
+            partition = []
+        if cycle[counter] == "digit" and data[i].isdigit():
+            partition.append(data[i])
+            counter += 1
+        elif cycle[counter] == "team" and data[i] in teams:
+            partition.append(data[i])
+            counter += 1
+        elif cycle[counter] == "+digit" and re.match(r"[+\−\-]?\d+", data[i]):
+            partition.append(data[i])
+            counter += 1
+        elif cycle[counter] == "float" and is_float_string(data[i]):
+            partition.append(data[i])
+            counter += 1
 
-    for i, item in enumerate(data):
-        if skip_next and not item.isdigit():
-            skip_next = False
-            continue
-        skip_next = False
-
-        if isinstance(item, str) and (
-            item.startswith("Qualification") or item.startswith("Relegation")
-        ):
-            skip_next = True
-            continue
-        if item == "(C)" or item == "(R)":
-            continue
-
-        if (
-            isinstance(item, str)
-            and len(item) == 1
-            and not item.isdigit()
-            and counter > 10
-        ):
-            continue
-
-        if item == "v" or item == "t" or item == "e":
-            continue
-
-        if item[0] == ".":
-            continue
-
-        result.append(item)
-        counter += 1
-
+    # Final partition
+    if len(partition) == 10:
+        result.append(partition)
     return result
 
 
@@ -79,11 +115,10 @@ def export_to_csv(
 
 def export_to_dict(
     data: list[list],
-    data_2: list[list] = None,
-    header_1: str = None,
-    header_2: str = None,
+    data_2: Optional[list[list]] = None,
+    header_1: Optional[str] = None,
+    header_2: Optional[str] = None,
 ):
-    os.makedirs("files", exist_ok=True)
     keys = data[0]
 
     json_data = [dict(zip(keys, row)) for row in data[1:]]

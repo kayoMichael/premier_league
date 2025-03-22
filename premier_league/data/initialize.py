@@ -2,7 +2,6 @@ import os
 import sqlite3
 from importlib.resources import files
 
-import appdirs
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -10,7 +9,8 @@ from .models.league import League
 
 
 def init_db(
-    db_filename: str = "premier_league.db", db_directory: str = "premier_league_sqlite"
+    db_filename: str = "premier_league.db",
+    db_directory: str = "data",
 ) -> Session:
     """
     Initialize the database and seed initial data
@@ -20,8 +20,9 @@ def init_db(
     Returns:
         SQLAlchemy session object
     """
-    data_dir = appdirs.user_data_dir(db_directory)
+    data_dir = os.path.join(os.getcwd(), db_directory)
     os.makedirs(data_dir, exist_ok=True)
+
     db_path = os.path.join(data_dir, db_filename)
 
     if not os.path.exists(db_path):

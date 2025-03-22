@@ -1,25 +1,10 @@
 # Premier League Data Tool
 
 ### Python Package
-premier_league Package scraps data from various sites to provide useful information for the Top 5 European Leagues. This includes Advanced Game Statistics for ML training, Rankings with European Qualifications, Transfers and Season Statistical Leaders for a given season. It also includes methods to expose the information rapidly as an API via Flask or AWS Lambda
-
-
-## Features
-
-📊 [Match Statistics](#matchstatistics)
-
-📊 [Ranking Table](#rankingtable)
-
-📊 [Player Leaders](#playerseasonleaders)
-
-📊 [Transfers](#transfers)
-
-📊 [Flask API Docs](#flask-api-docs)
-
+premier_league Package scraps data from various sites to provide useful information about the Premier League.
 
 ## Deployments
-
-
+There are several ways to utilize the package as an API via Flask, or AWS Lambda. The configuration are in both the /app and /lambda_function directories.
 ## Running the Flask API
 
 
@@ -43,6 +28,19 @@ npm install -g serverless-python-requirements
 python -m premier_league.lamdba_functions.deploy --aws-profile ${aws profile} --region ${region}
 ```
 
+
+
+## Features
+
+📊 [Match Statistics](#matchstatistics)
+
+📊 [Ranking Table](#rankingtable)
+
+📊 [Player Leaders](#playerseasonleaders)
+
+📊 [Transfers](#transfers)
+
+📊 [Flask API Docs](#flask-api-docs)
 
 # MatchStatistics
 
@@ -219,7 +217,7 @@ def init_db(
     """
     # Creates user data directory
     data_dir = appdirs.user_data_dir(db_directory)
-    
+
     # Sets up database if not exists
     db_path = os.path.join(data_dir, db_filename)
     if not os.path.exists(db_path):
@@ -227,12 +225,12 @@ def init_db(
         conn = sqlite3.connect(db_path)
         sql_path = files("premier_league").joinpath("data/premier_league.sql")
         conn.executescript(sql_file.read())
-        
+
     # Create SQLAlchemy session
     engine = create_engine(f"sqlite:///{db_path}")
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
-    
+
     # Seed initial league data
     seed_initial_data(session)
     return session
@@ -340,7 +338,7 @@ The ranking data is structured as a list of lists, where each inner list contain
 9. Goal difference
 10. Points
 
-Example: 
+Example:
 ```python
 [
     ["Position", "Team", "MP", "W", "D", "L", "GF", "GA", "GD", "Points"],
@@ -1109,7 +1107,7 @@ Download transfer data as a JSON file.
 | transfer_type | string | No       | Type of transfers to include     | "both"      |
 | league        | string | Yes*     | Target league (Defaults to PL)   | "Serie A"   |
 
-\* Required for all transfer-related endpoints except `/all_teams`  
+\* Required for all transfer-related endpoints except `/all_teams`
 \** Required only for file export endpoints
 
 ## ❌ Error Code

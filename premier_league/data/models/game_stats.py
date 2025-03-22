@@ -7,7 +7,7 @@ from premier_league.data.models.base import Base
 class GameStats(Base):
     __tablename__ = "game_stats"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     game_id = Column(String, ForeignKey("game.id"))
     team_id = Column(String, ForeignKey("team.id"))
 

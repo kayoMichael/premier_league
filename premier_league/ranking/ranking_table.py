@@ -1,20 +1,23 @@
 import os
 import re
-from typing import Optional
+import traceback
+from typing import Optional, Union
 
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A3
 from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 
 from premier_league.base import BaseScrapper
 
-from ..utils.methods import (export_to_csv, export_to_dict, export_to_json,
-                             remove_qualification_relegation_and_css)
+from ..utils.methods import (
+    export_to_csv,
+    export_to_dict,
+    export_to_json,
+    remove_qualification_relegation_and_css,
+)
 from ..utils.url import RANKING_URL
 from ..utils.xpath import RANKING
 
@@ -37,6 +40,7 @@ class RankingTable(BaseScrapper):
         self,
         league: Optional[str] = "Premier League",
         target_season: Optional[str] = None,
+        cache: Optional[bool] = True,
     ):
         """
         Initialize the RankingTable instance.
@@ -46,13 +50,16 @@ class RankingTable(BaseScrapper):
                                            If not provided, the current season is used.
             league (str, optional): The league to scrape data for. Defaults to "Premier League".
         """
+        self.league = league.title() if league else "Premier League"
         super().__init__(
-            RANKING_URL.get(league=league.lower()),
+            RANKING_URL.get(league=self.league.lower(), target_season=target_season),
             target_season=target_season,
+            season_limit=self.find_season_limit(),
+            cache=cache,
         )
         self.page = self.request_url_page()
         self.ranking_list = self._init_ranking_table()
-        self.league = league.title()
+        self.cache = cache
 
     def _init_ranking_table(self) -> list:
         """
@@ -61,14 +68,31 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of lists containing the processed ranking data.
         """
-
-        ranking_rows = remove_qualification_relegation_and_css(
-            self.get_list_by_xpath(RANKING.CURRENT_RANKING)
+        teams = list(
+            filter(
+                lambda x: x not in ("(R)", "(C)"), self.get_list_by_xpath(RANKING.TEAMS)
+            )
         )
-        ranking_list = [
-            ranking_rows[i : i + 10] for i in range(0, len(ranking_rows), 10)
-        ]
-        return ranking_list
+        ranking_rows = remove_qualification_relegation_and_css(
+            self.get_list_by_xpath(RANKING.CURRENT_RANKING), teams
+        )
+        return ranking_rows
+
+    def find_season_limit(self):
+        """
+        Find the season limit for the given league.
+
+        Returns:
+            int: The season limit for the given league.
+        """
+        season_limit_map = {
+            "premier league": 1947,
+            "la liga": 1929,
+            "serie a": 1929,
+            "ligue 1": 1945,
+            "bundesliga": 1963,
+        }
+        return season_limit_map[self.league.lower()]
 
     def get_ranking_list(self) -> list:
         """
@@ -122,57 +146,61 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the PDF to (without extension).
             dir (str): The directory to save the PDF file to.
         """
-        pdfmetrics.registerFont(TTFont("Arial", "Arial.ttf"))
-        os.makedirs("files", exist_ok=True)
-        pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
+        os.makedirs(dir, exist_ok=True)
 
-        pdf.setFont("Arial", 16)
-        title = f"{self.league} Table {self.season}"
-        title_width = pdf.stringWidth(title, "Arial", 16)
+        try:
+            pdf = canvas.Canvas(f"{dir}/{file_name}.pdf", pagesize=A3)
 
-        pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
-        pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
+            pdf.setFont("Helvetica", 16)
+            title = f"{self.league} Table {self.season}"
+            title_width = pdf.stringWidth(title, "Helvetica", 16)
 
-        pdf.setFont("Arial", 12)
-        table = Table(self.ranking_list)
-        if int(self.season[:4]) >= 2021 and self.league == "Premier League":
-            european_spots = self._find_european_qualification_spot()
-        else:
-            european_spots = self._scrap_european_qualification_spot()
+            pdf.drawString((A3[0] - title_width) / 2 + 0.5, A3[1] - 30 + 0.1, title)
+            pdf.drawString((A3[0] - title_width) / 2, A3[1] - 30, title)
 
-        # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
-        relegation = -3
-        if self.season == "1994-95":
-            relegation = -4
+            pdf.setFont("Helvetica", 12)
+            table = Table(self.ranking_list)
+            if int(self.season[:4]) >= 2021 and self.league == "Premier League":
+                european_spots = self._find_european_qualification_spot()
+            else:
+                european_spots = self._scrap_european_qualification_spot()
 
-        static_table_styles = [
-            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
-            ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, -1), "Arial"),
-            ("FONTSIZE", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("TOPPADDING", (0, 0), (-1, -1), 12),
-            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ("BACKGROUND", (0, relegation), (-1, -1), HexColor("#e06666")),
-        ]
+            # 4 Teams were relegated in the 1994-95 season. Only Year to Ever Happen.
+            relegation = -3
+            if self.season == "1994-95":
+                relegation = -4
 
-        all_styles = static_table_styles + european_spots
-        table.setStyle(TableStyle(all_styles))
-        table.wrapOn(pdf, 0, 0)
-        table_width, table_height = table.wrapOn(
-            pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
-        )
-        x = (A3[0] - table_width) / 2
-        y = A3[1] - table_height - 1 * inch
-        table.drawOn(pdf, x, y)
+            static_table_styles = [
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#cccccc")),
+                ("BACKGROUND", (0, 1), (-1, 4), HexColor("#aaff88")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ("BACKGROUND", (0, relegation), (-1, -1), HexColor("#e06666")),
+            ]
 
-        pdf.save()
+            all_styles = static_table_styles + european_spots
+            table.setStyle(TableStyle(all_styles))
+            table.wrapOn(pdf, 0, 0)
+            table_width, table_height = table.wrapOn(
+                pdf, A3[0] - 2 * inch, A3[1] - 2 * inch
+            )
+            x = (A3[0] - table_width) / 2
+            y = A3[1] - table_height - 1 * inch
+            table.drawOn(pdf, x, y)
+
+            pdf.save()
+        except Exception:
+            os.removedirs(dir)
+            traceback.print_exc()
 
     def _find_european_qualification_spot(
         self,
-    ) -> list[tuple[str, tuple[int, int], tuple[int, int]] | list]:
+    ) -> list[Union[tuple[str, tuple[int, int], tuple[int, int]], list]]:
         """
         Determine the European qualification spots for the current season.
 
@@ -351,7 +379,7 @@ class RankingTable(BaseScrapper):
         for tournament in possible_european_spot:
             qualified_teams = []
             teams = self.get_list_by_xpath(
-                f'//tr[.//th/a[contains(text(), "{tournament}")]]/td//text()'
+                f'//tr[.//th/a[contains(text(), "{tournament}")]]/th/a/@title'
             )
             for item in teams:
                 if "(" in item or ")" in item or "Fair Play" in item:
@@ -372,9 +400,12 @@ class RankingTable(BaseScrapper):
         ]
         for index, tournament in enumerate(qualified.keys()):
             for team in qualified[tournament]:
-                team_index = self.ranking_list.index(
-                    [i for i in self.ranking_list if team in i][0]
-                )
+                try:
+                    team_index = self.ranking_list.index(
+                        [i for i in self.ranking_list if team in i][0]
+                    )
+                except IndexError:
+                    pass
                 style.append(
                     ("BACKGROUND", (0, team_index), (-1, team_index), colors[index])
                 )
