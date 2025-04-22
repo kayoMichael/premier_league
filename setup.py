@@ -7,7 +7,7 @@ long_description = (dir / "README.md").read_text(encoding="utf-8")
 
 extras = {
     "pdf": ["reportlab==4.0.4"],
-    "flask": [
+    "api": [
         "flask==3.0.0",
         "flask-caching==2.3.0",
         "flask-cors==5.0.0",

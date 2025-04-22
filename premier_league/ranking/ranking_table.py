@@ -212,6 +212,8 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
+        from reportlab.lib.colors import HexColor
+
         m_conference = None
         m_europa = []
         m_champions = []
@@ -354,6 +356,8 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
+        from reportlab.lib.colors import HexColor
+
         if int(self.season[:4]) == 1997:
             possible_european_spot = [
                 "UEFA Cup",
