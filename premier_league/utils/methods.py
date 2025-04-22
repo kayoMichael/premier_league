@@ -24,6 +24,17 @@ def is_float_string(s: str) -> bool:
         return False
 
 
+def require_dependency(pkg: str, extra: str):
+    try:
+        __import__(pkg)
+    except ImportError:
+        raise ImportError(
+            f"Missing optional dependency '{pkg}'. Install it with:\n"
+            f"    pip install premier_league[{extra}] \n Install all options with: \n "
+            f"    pip install premier_league[all]"
+        )
+
+
 def remove_qualification_relegation_and_css(data, teams):
     potential_header = [
         "Pos",

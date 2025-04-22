@@ -103,8 +103,8 @@ class TestRankingTable:
         ranking.get_ranking_dict(header="Test Header")
         mock_export_dict.assert_called_once_with(sample_ranking, header_1="Test Header")
 
-    @patch("premier_league.ranking.ranking_table.canvas.Canvas")
-    @patch("premier_league.ranking.ranking_table.Table")
+    @patch("reportlab.pdfgen.canvas.Canvas")
+    @patch("reportlab.platypus.Table")
     @patch("premier_league.ranking.ranking_table.BaseScrapper.__init__")
     @patch("premier_league.ranking.ranking_table.RankingTable.request_url_page")
     @patch("premier_league.ranking.ranking_table.RankingTable._init_ranking_table")

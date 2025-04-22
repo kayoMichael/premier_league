@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .
+        pip install --use-pep517 -e ".[all]"
         pip install -r requirements-test.txt
         pip install pylint
 
@@ -69,7 +69,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .
+        pip install --use-pep517 -e ".[all]"
         pip install -r requirements-test.txt
         pip install pytest-html
 
