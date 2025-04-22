@@ -293,8 +293,8 @@ class TestPlayerSeasonLeaders:
                 "test_file", mock_player_data, header_1="Test Header"
             )
 
-    @patch("premier_league.players.season_leaders.canvas.Canvas")
-    @patch("premier_league.players.season_leaders.Table")
+    @patch("reportlab.pdfgen.canvas.Canvas")
+    @patch("reportlab.platypus.Table")
     @patch("premier_league.players.season_leaders.BaseScrapper.__init__")
     @patch("premier_league.players.season_leaders.PlayerSeasonLeaders._get_url")
     @patch("premier_league.players.season_leaders.PlayerSeasonLeaders.request_url_page")

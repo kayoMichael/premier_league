@@ -3,13 +3,6 @@ import re
 import traceback
 from typing import Optional, Union
 
-from reportlab.lib import colors
-from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3
-from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Table, TableStyle
-
 from premier_league.base import BaseScrapper
 
 from ..utils.methods import (
@@ -17,6 +10,7 @@ from ..utils.methods import (
     export_to_dict,
     export_to_json,
     remove_qualification_relegation_and_css,
+    require_dependency,
 )
 from ..utils.url import RANKING_URL
 from ..utils.xpath import RANKING
@@ -137,7 +131,7 @@ class RankingTable(BaseScrapper):
 
     def get_ranking_pdf(self, file_name: str, dir="files") -> None:
         """
-        Generate a PDF file containing the ranking table.
+        Generate a PDF file containing the ranking table. Requires premier_league[pdf] to be installed.
 
         This method creates a formatted PDF file with the ranking table, including
         color-coded rows for European qualification spots and relegation.
@@ -146,6 +140,14 @@ class RankingTable(BaseScrapper):
             file_name (str): The name of the file to save the PDF to (without extension).
             dir (str): The directory to save the PDF file to.
         """
+        require_dependency("reportlab", "pdf")
+        from reportlab.lib import colors
+        from reportlab.lib.colors import HexColor
+        from reportlab.lib.pagesizes import A3
+        from reportlab.lib.units import inch
+        from reportlab.pdfgen import canvas
+        from reportlab.platypus import Table, TableStyle
+
         os.makedirs(dir, exist_ok=True)
 
         try:
@@ -210,6 +212,8 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
+        from reportlab.lib.colors import HexColor
+
         m_conference = None
         m_europa = []
         m_champions = []
@@ -352,6 +356,8 @@ class RankingTable(BaseScrapper):
         Returns:
             list: A list of tuples containing styling information for the PDF table.
         """
+        from reportlab.lib.colors import HexColor
+
         if int(self.season[:4]) == 1997:
             possible_european_spot = [
                 "UEFA Cup",

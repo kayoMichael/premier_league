@@ -8,9 +8,30 @@ A comprehensive Python library for accessing and analyzing data for the Top 5 Eu
 
 ## Installation
 
+#### Core Requirements
 ```bash
 pip install premier_league
 ````
+
+#### PDF Export Methods (Optional)
+```bash
+pip install premier_league[pdf]
+```
+
+#### API Methods (Optional)
+```bash
+pip install premier_league[api]
+```
+
+#### Lambda Methods (Optional)
+```bash
+pip install premier_league[lambda]
+```
+
+#### All Methods
+```bash
+pip install premier_league[all]
+```
 
 ## Local Development
 Anyone is Welcome to Contribute and Fix an Exisiting Issue or a new Problem

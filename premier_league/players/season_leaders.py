@@ -3,16 +3,9 @@ import re
 import traceback
 from typing import Literal, Optional
 
-from reportlab.lib import colors
-from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import A3
-from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Table, TableStyle
-
 from premier_league.base import BaseScrapper
 
-from ..utils.methods import export_to_csv, export_to_json
+from ..utils.methods import export_to_csv, export_to_json, require_dependency
 from ..utils.url import PLAYERS_URL
 from ..utils.xpath import PLAYERS
 
@@ -162,7 +155,7 @@ class PlayerSeasonLeaders(BaseScrapper):
 
     def get_top_stats_pdf(self, file_name: str, path: str):
         """
-        Export the top 20 player statistics to a PDF file.
+        Export the top 20 player statistics to a PDF file. Requires premier_league[pdf] to be installed.
 
         This method creates a formatted PDF with a title, table of statistics,
         and applies styling to enhance readability.
@@ -171,6 +164,14 @@ class PlayerSeasonLeaders(BaseScrapper):
             file_name (str): The name of the file to save (without extension).
             path (str): The path to save the PDF file
         """
+        require_dependency("reportlab", "pdf")
+        from reportlab.lib import colors
+        from reportlab.lib.colors import HexColor
+        from reportlab.lib.pagesizes import A3
+        from reportlab.lib.units import inch
+        from reportlab.pdfgen import canvas
+        from reportlab.platypus import Table, TableStyle
+
         os.makedirs(path, exist_ok=True)
         pdf = canvas.Canvas(f"{path}/{file_name}.pdf", pagesize=A3)
 
