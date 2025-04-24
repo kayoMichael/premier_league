@@ -8,7 +8,6 @@ A comprehensive Python library for accessing and analyzing data for the Top 5 Eu
 
 ## Installation
 
-#### Core Requirements
 ```bash
 pip install premier_league
 ````
@@ -375,7 +374,24 @@ The database is seeded with these leagues by default:
 
 # RankingTable
 
-`RankingTable` Fetches ranking data for a season and league.
+`RankingTable` Fetches Team ranking data for a given season and league.
+
+## Supported Leagues
+- Premier League
+- Ligue 1
+- La Liga
+- Serie A
+- Bundesliga
+
+## Supported Oldest Seasons
+- Premier League : 1947,
+- La Liga": 1929,
+- Serie A": 1929,
+- Ligue 1": 1945,
+- Bundesliga": 1963,
+
+`find_season_limit` can be invoked to find the oldest supported seasons in `RankingTable` class
+
 
 ## Usage
 
@@ -1361,9 +1377,14 @@ A Preconfigured Serverless File is Rooted with the Lambda Code. All Files Create
 - s3:PutObject
 - s3:GetObject
 ```
-2. Create a S3 Bucket on the AWS Comsole with a name
-3. Run the following command to deploy and specify S3 bucket name, AWS Profile and the Region. (If no S3 Bucket name is specified, it defaults to premier-league-bucket)
+2. Create a S3 Bucket on the AWS Console with a name
+3. Install the Required Serverless Framework
+```terminal
+npm install -g serverless
+npm install -g serverless-python-requirements
+```
+4. Run the following command to deploy and specify S3 bucket name, AWS Profile and the Region. (If no S3 Bucket name is specified, it defaults to premier-league-bucket)
 ```
 S3_BUCKET_NAME=${s3 bucket name} python -m premier_league.lambda_functions.deploy_premier_league --aws-profile ${AWS IAM Account name} --region ${Your Region}
 ```
-4. API Endpoints information will show up once a Successful Deployment has been done.
+5. API Endpoints information will show up once a Successful Deployment has been done.
