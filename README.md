@@ -385,10 +385,10 @@ The database is seeded with these leagues by default:
 
 ## Supported Oldest Seasons
 - Premier League : 1947,
-- La Liga": 1929,
-- Serie A": 1929,
-- Ligue 1": 1945,
-- Bundesliga": 1963,
+- La Liga: 1929,
+- Serie A: 1929,
+- Ligue 1: 1945,
+- Bundesliga: 1963,
 
 `find_season_limit` can be invoked to find the oldest supported seasons in `RankingTable` class
 
