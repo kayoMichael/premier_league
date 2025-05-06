@@ -3,19 +3,22 @@ from datetime import datetime
 
 class PredictorURL:
     BASE_URLS = {
-        "Premier League": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
-        "La Liga": "https://fbref.com/en/comps/12/{SEASON}/schedule/{SEASON}-La-Liga-Scores-and-Fixtures",
-        "Serie A": "https://fbref.com/en/comps/11/{SEASON}/schedule/{SEASON}-Serie-A-Scores-and-Fixtures",
-        "Ligue 1": "https://fbref.com/en/comps/13/{SEASON}/schedule/{SEASON}-League-1-Scores-and-Fixtures",
-        "Fußball-Bundesliga": "https://fbref.com/en/comps/20/{SEASON}/schedule/{SEASON}-Bundesliga-Scores-and-Fixtures",
-        "EFL Championship": "https://fbref.com/en/comps/10/{SEASON}/schedule/{SEASON}-Championship-Scores-and-Fixtures",
-        "Major League Soccer": "https://fbref.com/en/comps/22/{SEASON}/schedule/{SEASON}-MLS-Scores-and-Fixtures",
+        "premier league": "https://fbref.com/en/comps/9/{SEASON}/schedule/{SEASON}-Premier-League-Scores-and-Fixtures",
+        "la liga": "https://fbref.com/en/comps/12/{SEASON}/schedule/{SEASON}-La-Liga-Scores-and-Fixtures",
+        "serie a": "https://fbref.com/en/comps/11/{SEASON}/schedule/{SEASON}-Serie-A-Scores-and-Fixtures",
+        "ligue 1": "https://fbref.com/en/comps/13/{SEASON}/schedule/{SEASON}-League-1-Scores-and-Fixtures",
+        "fußball-bundesliga": "https://fbref.com/en/comps/20/{SEASON}/schedule/{SEASON}-Bundesliga-Scores-and-Fixtures",
+        "efl championship": "https://fbref.com/en/comps/10/{SEASON}/schedule/{SEASON}-Championship-Scores-and-Fixtures",
     }
 
     @classmethod
     def get(cls, season: str, league: str) -> str:
         """Returns all formatted URLs for the given season."""
-        return cls.BASE_URLS[league].format(SEASON=season)
+        if league.lower() not in cls.BASE_URLS:
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
+            )
+        return cls.BASE_URLS[league.lower()].format(SEASON=season)
 
 
 class RANKING_URL:

@@ -147,6 +147,13 @@ recent_stats = stats.get_game_stats_before_date(
 )
 ```
 
+#### `get_future_match(self, league: str, team=None) -> Dict`
+Retrieves the next match for a specific team or league.
+```python
+next_match = stats.get_future_match(league="Premier League", team="Arsenal")
+```
+
+
 ### Data Management
 
 #### `update_data_set()`

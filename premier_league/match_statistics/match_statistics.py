@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union
 from xml.etree.ElementTree import ElementTree
 
 import pandas as pd
@@ -316,6 +316,95 @@ class MatchStatistics(BaseDataSetScrapper):
 
         return [stat.to_dict() for stat in stats] if stats else []
 
+    def get_future_match(self, league: str, team=None) -> Union[Dict, str]:
+        """
+        Retrieve the next Match for a specific league and team (optional). This would return the team object of the future match.
+
+        Args:
+            league (str): The name of the league to retrieve the info (e.g., "Premier League").
+            team (str, optional): The name of the team to filter games. Defaults to None.
+        """
+        current_date = datetime.now()
+        current_year = current_date.year
+        current_month = current_date.month
+        if current_month >= 8:
+            self.current_season = f"{current_year}-{current_year + 1}"
+        else:
+            self.current_season = f"{current_year - 1}-{current_year}"
+
+        if not team:
+
+            def process_func(result, **kwargs):
+                url = result.xpath(MATCHES.NEXT_MATCH_ROW)
+                if len(url) == 0:
+                    return "Current Season is finished! No more matches to play. For exiting games, please check the database. If they are not there. Run update_data_set(). Note: to extract match information from past games, please use get_games_before_date"
+                match = re.search(r"/teams/([a-f0-9]+)/([a-f0-9]+)/", url[0])
+                if match:
+                    home_team_id = match.group(1)
+                    away_team_id_ = match.group(2)
+
+                    home_team = (
+                        self.session.query(Team).filter_by(id=home_team_id).first()
+                    )
+                    away_team = (
+                        self.session.query(Team).filter_by(id=away_team_id_).first()
+                    )
+
+                    return {"home_team": home_team, "away_team": away_team}
+                return (
+                    "Current Season is finished! No more matches to play. For exiting games, "
+                    "please check the database. If they are not there. Run update_data_set(). "
+                    "Note: to extract match information from past games, please use get_games_before_date()"
+                )
+
+        else:
+            db_team = self.session.query(Team).filter_by(name=team).first()
+            if not db_team:
+                raise ValueError(
+                    f"No team found with name: {team}. Please run get_all_teams() for all team names"
+                )
+
+            def process_func(result, **kwargs):
+                urls = result.xpath(MATCHES.NEXT_MATCH_ROW)
+                if len(urls) == 0:
+                    return (
+                        "Current Season is finished! No more matches to play. For exiting games, "
+                        "please check the database. If they are not there. Run update_data_set(). "
+                        "Note: to extract match information from past games, please use get_games_before_date()"
+                    )
+                for url in urls:
+                    match = re.search(r"/teams/([a-f0-9]+)/([a-f0-9]+)/", url)
+                    if match:
+                        home_team_id = match.group(1)
+                        away_team_id_ = match.group(2)
+                        if home_team_id == db_team.id or away_team_id_ == db_team.id:
+                            home_team = (
+                                self.session.query(Team)
+                                .filter_by(id=home_team_id)
+                                .first()
+                            )
+                            away_team = (
+                                self.session.query(Team)
+                                .filter_by(id=away_team_id_)
+                                .first()
+                            )
+                            return {"home_team": home_team, "away_team": away_team}
+
+                return (
+                    f"All matches for {team} are already played this season. "
+                    f"Please check the database for existing games. If they are not there, "
+                    f"run update_data_set() to fetch past games. Run get_team_games() to extract "
+                    f"match information from past games"
+                )
+
+        result = self.scrape_and_process_all(
+            [PredictorURL.get(self.current_season, league)],
+            rate_limit=4,
+            desc="Fetching Match Details",
+            process_func=process_func,
+        )[0]
+        return result
+
     def update_data_set(self):
         """
         Update the dataset by scraping new game data and updating league information.
@@ -397,7 +486,7 @@ class MatchStatistics(BaseDataSetScrapper):
             .all()
         )
 
-        # Update Legaue Updated Date Index
+        # Update League Updated Date Index
         for league, season, latest_match_week in latest_games:
             league_obj = self.session.query(League).filter_by(name=league).first()
             league_obj.up_to_date_season = season
