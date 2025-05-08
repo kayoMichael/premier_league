@@ -19,7 +19,7 @@ from ..utils.xpath import MATCHES
 
 class MatchStatistics(BaseDataSetScrapper):
     """
-    A class to scrape, process, and update Premier League Predictor data for machine learning purposes.
+    A class to scrape, process, and update MatchStatistics data for machine learning purposes.
 
     This class handles the retrieval of match data from specified URLs, processes game and player
     statistics from various tables, updates the underlying database, and allows exporting the data
@@ -32,7 +32,7 @@ class MatchStatistics(BaseDataSetScrapper):
         db_directory: Optional[str] = "data",
     ):
         """
-        Initialize the PLPredictor instance.
+        Initialize the MatchStatistics instance.
 
         Sets up the current season, an empty list of URLs, initializes the database session,
         and fetches the current leagues information from the database.
@@ -140,6 +140,10 @@ class MatchStatistics(BaseDataSetScrapper):
 
         # Sort by date to maintain chronological order
         df = df.sort_values("date")
+
+        # 0% is shown as nan in some cases. So fill with 0
+        df["home_save_percentage"].fillna(0)
+        df["away_save_percentage"].fillna(0)
 
         # Save to CSV
         df.to_csv(output_path, index=False)
