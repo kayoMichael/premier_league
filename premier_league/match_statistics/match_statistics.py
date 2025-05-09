@@ -49,7 +49,49 @@ class MatchStatistics(BaseDataSetScrapper):
             .all()
         )
 
-    def create_dataset(self, output_path: str, rows_count: int = None):
+    def __calculate_team_stats(
+        self, team: Team, game: Game, lag: int, side: Literal["home", "away"] = "home"
+    ) -> dict[str]:
+        """
+        Calculate the Team Statistics with lag.
+        team: (Team) the team query
+        game: (Game) The Game Object
+        side: (str) Home or Away
+        """
+        past_games = self.get_games_before_date(game.date, lag, team=team.name)
+        same_season_games = list(
+            filter(lambda past_game: past_game.get("season") == game.season, past_games)
+        )
+
+        if len(same_season_games) < lag:
+            return None
+
+        same_season_stats = [game["game_stats"] for game in same_season_games]
+        stats_history = []
+
+        for stats in same_season_stats:
+            corresponding_team_stats = (
+                stats[0] if stats[0]["team_id"] == team.id else stats[1]
+            )
+            if corresponding_team_stats["team_id"] == team.id:  # Safety check
+                stats_history.append(corresponding_team_stats)
+
+        n = len(stats_history)
+        if n == 0:
+            return None
+
+        removal = ["id", "game_id", "team_id"]
+        cleaned_up_history = [
+            {k: v for k, v in stat.items() if k not in removal}
+            for stat in stats_history
+        ]
+
+        return {
+            f"{side}_{key}": sum(d[key] for d in cleaned_up_history) / n
+            for key in cleaned_up_history[0].keys()
+        }
+
+    def create_dataset(self, output_path: str, rows_count: int = None, lag: int = 10):
         """
         Create a CSV file containing game statistics for machine learning training. Currently max of 17520 Data Rows.
 
@@ -59,6 +101,8 @@ class MatchStatistics(BaseDataSetScrapper):
         Args:
             output_path (str): The file path where the CSV file will be saved.
             rows_count (int, optional): The maximum number of rows to include in the dataset. Defaults to None. if given gets the last n rows. after sorting by date.
+            lag (int): The number of days to lag the data. 10 indicates, the current training data will be the past 15 games average for that team (subject to availability. First game available will be trimmed out). WARNING, if set to 0,
+            the model will predict the scores of the game with the stats of the game itself which indicates data leakage.
         Returns:
             None
         """
@@ -105,6 +149,8 @@ class MatchStatistics(BaseDataSetScrapper):
                 "date": game.date,
                 "season": game.season,
                 "match_week": game.match_week,
+                "home_team_id": game.home_team_id,
+                "away_team_id": game.away_team_id,
                 "home_team": game.home_team.name,
                 "away_team": game.away_team.name,
                 "home_goals": game.home_goals,
@@ -113,37 +159,24 @@ class MatchStatistics(BaseDataSetScrapper):
                 "away_points": game.away_team_points,
             }
 
-            for key, value in vars(home_stats).items():
-                if not key.startswith("_") and key not in [
-                    "id",
-                    "game_id",
-                    "team_id",
-                    "game",
-                    "team",
-                ]:
-                    game_dict[f"home_{key}"] = value
+            # Construct Lag
+            home_team = game.home_team
+            away_team = game.away_team
 
-            for key, value in vars(away_stats).items():
-                if not key.startswith("_") and key not in [
-                    "id",
-                    "game_id",
-                    "team_id",
-                    "game",
-                    "team",
-                ]:
-                    game_dict[f"away_{key}"] = value
+            # Calculate stats for both teams
+            home_stat = self.__calculate_team_stats(home_team, game, lag)
+            away_stat = self.__calculate_team_stats(away_team, game, lag, side="away")
 
-            game_data.append(game_dict)
+            if home_stat is None or away_stat is None:
+                continue
+
+            game_data.append({**game_dict, **home_stat, **away_stat})
 
         # Convert to DataFrame and save to CSV
         df = pd.DataFrame(game_data)
 
         # Sort by date to maintain chronological order
         df = df.sort_values("date")
-
-        # 0% is shown as nan in some cases. So fill with 0
-        df["home_save_percentage"].fillna(0)
-        df["away_save_percentage"].fillna(0)
 
         # Save to CSV
         df.to_csv(output_path, index=False)
