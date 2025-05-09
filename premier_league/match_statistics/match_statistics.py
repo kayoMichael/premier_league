@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Literal, Optional, Type, Union
 from xml.etree.ElementTree import ElementTree
 
 import pandas as pd
