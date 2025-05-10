@@ -20,6 +20,9 @@ class MATCHES:
     def match_report_url(match_week: Optional[int] = 1) -> str:
         return f"//td[@data-stat='match_report'][not(../td[@data-stat='notes'][contains(text(), 'Match Cancelled') or contains(text(), 'Match awarded')])][../th[@data-stat='gameweek' and number(text()) >= number({match_week})]]/a[text()='Match Report']/@href"
 
+    NEXT_MATCH_ROW: str = (
+        f"//td[@data-stat='match_report']/a[text()='Head-to-Head']/@href"
+    )
     A_TAG: str = "'.//a//text()'"
     GAME_TABLE: str = "//table"
     GAME_HEADER: str = '//div[contains(text(), "Matchweek")]//text()'

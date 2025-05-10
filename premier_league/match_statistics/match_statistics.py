@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List, Optional, Type, Union
+from typing import Dict, List, Literal, Optional, Type, Union
 from xml.etree.ElementTree import ElementTree
 
 import pandas as pd
@@ -19,7 +19,7 @@ from ..utils.xpath import MATCHES
 
 class MatchStatistics(BaseDataSetScrapper):
     """
-    A class to scrape, process, and update Premier League Predictor data for machine learning purposes.
+    A class to scrape, process, and update MatchStatistics data for machine learning purposes.
 
     This class handles the retrieval of match data from specified URLs, processes game and player
     statistics from various tables, updates the underlying database, and allows exporting the data
@@ -32,7 +32,7 @@ class MatchStatistics(BaseDataSetScrapper):
         db_directory: Optional[str] = "data",
     ):
         """
-        Initialize the PLPredictor instance.
+        Initialize the MatchStatistics instance.
 
         Sets up the current season, an empty list of URLs, initializes the database session,
         and fetches the current leagues information from the database.
@@ -49,7 +49,53 @@ class MatchStatistics(BaseDataSetScrapper):
             .all()
         )
 
-    def create_dataset(self, output_path: str, rows_count: int = None):
+    def __calculate_team_stats(
+        self,
+        team: Team,
+        game: Type[Game],
+        lag: int,
+        side: Literal["home", "away"] = "home",
+    ) -> Union[dict[str, float], None]:
+        """
+        Calculate the Team Statistics with lag.
+        team: (Team) the team query
+        game: (Game) The Game Object
+        side: (str) Home or Away
+        """
+        past_games = self.get_games_before_date(game.date, lag, team=team.name)
+        same_season_games = list(
+            filter(lambda past_game: past_game.get("season") == game.season, past_games)
+        )
+
+        if len(same_season_games) < lag:
+            return None
+
+        same_season_stats = [game["game_stats"] for game in same_season_games]
+        stats_history = []
+
+        for stats in same_season_stats:
+            corresponding_team_stats = (
+                stats[0] if stats[0]["team_id"] == team.id else stats[1]
+            )
+            if corresponding_team_stats["team_id"] == team.id:  # Safety check
+                stats_history.append(corresponding_team_stats)
+
+        n = len(stats_history)
+        if n == 0:
+            return None
+
+        removal = ["id", "game_id", "team_id"]
+        cleaned_up_history = [
+            {k: v for k, v in stat.items() if k not in removal}
+            for stat in stats_history
+        ]
+
+        return {
+            f"{side}_{key}": sum(d[key] for d in cleaned_up_history) / n
+            for key in cleaned_up_history[0].keys()
+        }
+
+    def create_dataset(self, output_path: str, rows_count: int = None, lag: int = 10):
         """
         Create a CSV file containing game statistics for machine learning training. Currently max of 17520 Data Rows.
 
@@ -59,13 +105,16 @@ class MatchStatistics(BaseDataSetScrapper):
         Args:
             output_path (str): The file path where the CSV file will be saved.
             rows_count (int, optional): The maximum number of rows to include in the dataset. Defaults to None. if given gets the last n rows. after sorting by date.
+            lag (int): The number of days to lag the data. 10 indicates, the current row will use the stats for the team's past 10 game average (Where all earlier games are dropped).
         Returns:
             None
         """
         if rows_count is not None and type(rows_count) != int:
             raise ValueError("rows_count must be an integer")
-        if rows_count is not None and rows_count < 0:
+        elif rows_count is not None and rows_count < 0:
             raise ValueError("rows_count must be a positive integer")
+        elif lag <= 0:
+            raise ValueError("lag must be at least 1")
 
         query = self.session.query(Game).options(
             joinedload(Game.game_stats),
@@ -80,31 +129,13 @@ class MatchStatistics(BaseDataSetScrapper):
         game_data = []
 
         for game in games:
-            home_stats = next(
-                (
-                    stats
-                    for stats in game.game_stats
-                    if stats.team_id == game.home_team_id
-                ),
-                None,
-            )
-            away_stats = next(
-                (
-                    stats
-                    for stats in game.game_stats
-                    if stats.team_id == game.away_team_id
-                ),
-                None,
-            )
-
-            if not home_stats or not away_stats:
-                continue
-
             game_dict = {
                 "game_id": game.id,
                 "date": game.date,
                 "season": game.season,
                 "match_week": game.match_week,
+                "home_team_id": game.home_team_id,
+                "away_team_id": game.away_team_id,
                 "home_team": game.home_team.name,
                 "away_team": game.away_team.name,
                 "home_goals": game.home_goals,
@@ -113,33 +144,28 @@ class MatchStatistics(BaseDataSetScrapper):
                 "away_points": game.away_team_points,
             }
 
-            for key, value in vars(home_stats).items():
-                if not key.startswith("_") and key not in [
-                    "id",
-                    "game_id",
-                    "team_id",
-                    "game",
-                    "team",
-                ]:
-                    game_dict[f"home_{key}"] = value
+            # Construct Lag
+            home_team = game.home_team
+            away_team = game.away_team
 
-            for key, value in vars(away_stats).items():
-                if not key.startswith("_") and key not in [
-                    "id",
-                    "game_id",
-                    "team_id",
-                    "game",
-                    "team",
-                ]:
-                    game_dict[f"away_{key}"] = value
+            # Calculate stats for both teams
+            home_stat = self.__calculate_team_stats(home_team, game, lag)
+            away_stat = self.__calculate_team_stats(away_team, game, lag, side="away")
 
-            game_data.append(game_dict)
+            if home_stat is None or away_stat is None:
+                continue
+
+            game_data.append({**game_dict, **home_stat, **away_stat})
 
         # Convert to DataFrame and save to CSV
         df = pd.DataFrame(game_data)
 
         # Sort by date to maintain chronological order
         df = df.sort_values("date")
+
+        # Move Target Columns to the end
+        target_columns = ["home_goals", "away_goals"]
+        df = df[df.columns.drop(target_columns).tolist() + target_columns]
 
         # Save to CSV
         df.to_csv(output_path, index=False)
@@ -316,6 +342,95 @@ class MatchStatistics(BaseDataSetScrapper):
 
         return [stat.to_dict() for stat in stats] if stats else []
 
+    def get_future_match(self, league: str, team=None) -> Union[Dict, str]:
+        """
+        Retrieve the next Match for a specific league and team (optional). This would return the team object of the future match.
+
+        Args:
+            league (str): The name of the league to retrieve the info (e.g., "Premier League").
+            team (str, optional): The name of the team to filter games. Defaults to None.
+        """
+        current_date = datetime.now()
+        current_year = current_date.year
+        current_month = current_date.month
+        if current_month >= 8:
+            self.current_season = f"{current_year}-{current_year + 1}"
+        else:
+            self.current_season = f"{current_year - 1}-{current_year}"
+
+        if not team:
+
+            def process_func(result, **kwargs):
+                url = result.xpath(MATCHES.NEXT_MATCH_ROW)
+                if len(url) == 0:
+                    return "Current Season is finished! No more matches to play. For exiting games, please check the database. If they are not there. Run update_data_set(). Note: to extract match information from past games, please use get_games_before_date"
+                match = re.search(r"/teams/([a-f0-9]+)/([a-f0-9]+)/", url[0])
+                if match:
+                    home_team_id = match.group(1)
+                    away_team_id_ = match.group(2)
+
+                    home_team = (
+                        self.session.query(Team).filter_by(id=home_team_id).first()
+                    )
+                    away_team = (
+                        self.session.query(Team).filter_by(id=away_team_id_).first()
+                    )
+
+                    return {"home_team": home_team, "away_team": away_team}
+                return (
+                    "Current Season is finished! No more matches to play. For exiting games, "
+                    "please check the database. If they are not there. Run update_data_set(). "
+                    "Note: to extract match information from past games, please use get_games_before_date()"
+                )
+
+        else:
+            db_team = self.session.query(Team).filter_by(name=team).first()
+            if not db_team:
+                raise ValueError(
+                    f"No team found with name: {team}. Please run get_all_teams() for all team names"
+                )
+
+            def process_func(result, **kwargs):
+                urls = result.xpath(MATCHES.NEXT_MATCH_ROW)
+                if len(urls) == 0:
+                    return (
+                        "Current Season is finished! No more matches to play. For exiting games, "
+                        "please check the database. If they are not there. Run update_data_set(). "
+                        "Note: to extract match information from past games, please use get_games_before_date()"
+                    )
+                for url in urls:
+                    match = re.search(r"/teams/([a-f0-9]+)/([a-f0-9]+)/", url)
+                    if match:
+                        home_team_id = match.group(1)
+                        away_team_id_ = match.group(2)
+                        if home_team_id == db_team.id or away_team_id_ == db_team.id:
+                            home_team = (
+                                self.session.query(Team)
+                                .filter_by(id=home_team_id)
+                                .first()
+                            )
+                            away_team = (
+                                self.session.query(Team)
+                                .filter_by(id=away_team_id_)
+                                .first()
+                            )
+                            return {"home_team": home_team, "away_team": away_team}
+
+                return (
+                    f"All matches for {team} are already played this season. "
+                    f"Please check the database for existing games. If they are not there, "
+                    f"run update_data_set() to fetch past games. Run get_team_games() to extract "
+                    f"match information from past games"
+                )
+
+        result = self.scrape_and_process_all(
+            [PredictorURL.get(self.current_season, league)],
+            rate_limit=4,
+            desc="Fetching Match Details",
+            process_func=process_func,
+        )[0]
+        return result
+
     def update_data_set(self):
         """
         Update the dataset by scraping new game data and updating league information.
@@ -397,7 +512,7 @@ class MatchStatistics(BaseDataSetScrapper):
             .all()
         )
 
-        # Update Legaue Updated Date Index
+        # Update League Updated Date Index
         for league, season, latest_match_week in latest_games:
             league_obj = self.session.query(League).filter_by(name=league).first()
             league_obj.up_to_date_season = season

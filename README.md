@@ -147,6 +147,13 @@ recent_stats = stats.get_game_stats_before_date(
 )
 ```
 
+#### `get_future_match(self, league: str, team=None) -> Dict`
+Retrieves the next match for a specific team or league.
+```python
+next_match = stats.get_future_match(league="Premier League", team="Arsenal")
+```
+
+
 ### Data Management
 
 #### `update_data_set()`
@@ -156,11 +163,12 @@ stats = MatchStatistics()
 stats.update_data_set()
 ```
 
-#### `create_dataset(output_path: str)`
-Exports match statistics database as a Machine Learning dataset in CSV format.
+#### `create_dataset(output_path: str, rows_count:int = None, lag: int = 10)`
+Exports match statistics database as a Machine Learning dataset in CSV format. lag is the number of games to look back for each game.
+E.g. Lag=10 means in each row of game stats, the average stats of the last 10 games for each team will be used.
 ```python
 # Export all Data
-MatchStatistics().create_dataset("premier_league_stats.csv")
+MatchStatistics().create_dataset("premier_league_stats.csv", lag=2)
 
 # Export 800 Data
 MatchStatistics().create_dataset("premier_league_stats.csv", rows_count=800)
@@ -385,10 +393,10 @@ The database is seeded with these leagues by default:
 
 ## Supported Oldest Seasons
 - Premier League : 1947,
-- La Liga": 1929,
-- Serie A": 1929,
-- Ligue 1": 1945,
-- Bundesliga": 1963,
+- La Liga: 1929,
+- Serie A: 1929,
+- Ligue 1: 1945,
+- Bundesliga: 1963,
 
 `find_season_limit` can be invoked to find the oldest supported seasons in `RankingTable` class
 
