@@ -163,11 +163,12 @@ stats = MatchStatistics()
 stats.update_data_set()
 ```
 
-#### `create_dataset(output_path: str)`
-Exports match statistics database as a Machine Learning dataset in CSV format.
+#### `create_dataset(output_path: str, rows_count:int = None, lag: int = 10)`
+Exports match statistics database as a Machine Learning dataset in CSV format. lag is the number of games to look back for each game.
+E.g. Lag=10 means in each row of game stats, the average stats of the last 10 games for each team will be used.
 ```python
 # Export all Data
-MatchStatistics().create_dataset("premier_league_stats.csv")
+MatchStatistics().create_dataset("premier_league_stats.csv", lag=2)
 
 # Export 800 Data
 MatchStatistics().create_dataset("premier_league_stats.csv", rows_count=800)

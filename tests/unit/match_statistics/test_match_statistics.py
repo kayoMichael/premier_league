@@ -104,17 +104,32 @@ class TestMatchStatistics:
         match_statistics.session.query.return_value.options.return_value.all.return_value = [
             game
         ]
+        match_statistics._MatchStatistics__calculate_team_stats = MagicMock()
+        match_statistics._MatchStatistics__calculate_team_stats.side_effect = [
+            {"home_stat1": 10, "home_stat2": 20},
+            {"away_stat1": 5, "away_stat2": 15},
+        ]
 
         with patch(
             "premier_league.match_statistics.match_statistics.pd.DataFrame"
         ) as mock_df:
             df_instance = MagicMock()
             mock_df.return_value = df_instance
+
+            # Configure the columns attribute for the drop operation
+            columns_mock = MagicMock()
+            df_instance.columns = columns_mock
+            columns_drop_result = MagicMock()
+            columns_mock.drop.return_value = columns_drop_result
+            columns_drop_result.tolist.return_value = ["other_column1", "other_column2"]
             df_instance.sort_values.return_value = df_instance
+            df_instance.__getitem__.return_value = df_instance
             match_statistics.create_dataset("test_output.csv")
+
             match_statistics.session.query.assert_any_call(Game)
             mock_df.assert_called_once()
             df_instance.sort_values.assert_called_once_with("date")
+            columns_mock.drop.assert_called_once()  # Verify columns.drop was called
             df_instance.to_csv.assert_called_once_with("test_output.csv", index=False)
 
     def test_create_dataset_with_rows_limit(self, match_statistics):
