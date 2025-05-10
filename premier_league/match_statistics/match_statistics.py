@@ -50,8 +50,12 @@ class MatchStatistics(BaseDataSetScrapper):
         )
 
     def __calculate_team_stats(
-        self, team: Team, game: Game, lag: int, side: Literal["home", "away"] = "home"
-    ) -> dict[str]:
+        self,
+        team: Team,
+        game: Type[Game],
+        lag: int,
+        side: Literal["home", "away"] = "home",
+    ) -> Union[dict[str, float], None]:
         """
         Calculate the Team Statistics with lag.
         team: (Team) the team query
@@ -101,15 +105,16 @@ class MatchStatistics(BaseDataSetScrapper):
         Args:
             output_path (str): The file path where the CSV file will be saved.
             rows_count (int, optional): The maximum number of rows to include in the dataset. Defaults to None. if given gets the last n rows. after sorting by date.
-            lag (int): The number of days to lag the data. 10 indicates, the current training data will be the past 15 games average for that team (subject to availability. First game available will be trimmed out). WARNING, if set to 0,
-            the model will predict the scores of the game with the stats of the game itself which indicates data leakage.
+            lag (int): The number of days to lag the data. 10 indicates, the current row will use the stats for the team's past 10 game average (Where all earlier games are dropped).
         Returns:
             None
         """
         if rows_count is not None and type(rows_count) != int:
             raise ValueError("rows_count must be an integer")
-        if rows_count is not None and rows_count < 0:
+        elif rows_count is not None and rows_count < 0:
             raise ValueError("rows_count must be a positive integer")
+        elif lag <= 0:
+            raise ValueError("lag must be at least 1")
 
         query = self.session.query(Game).options(
             joinedload(Game.game_stats),
@@ -124,26 +129,6 @@ class MatchStatistics(BaseDataSetScrapper):
         game_data = []
 
         for game in games:
-            home_stats = next(
-                (
-                    stats
-                    for stats in game.game_stats
-                    if stats.team_id == game.home_team_id
-                ),
-                None,
-            )
-            away_stats = next(
-                (
-                    stats
-                    for stats in game.game_stats
-                    if stats.team_id == game.away_team_id
-                ),
-                None,
-            )
-
-            if not home_stats or not away_stats:
-                continue
-
             game_dict = {
                 "game_id": game.id,
                 "date": game.date,
@@ -177,6 +162,10 @@ class MatchStatistics(BaseDataSetScrapper):
 
         # Sort by date to maintain chronological order
         df = df.sort_values("date")
+
+        # Move Target Columns to the end
+        target_columns = ["home_goals", "away_goals"]
+        df = df[df.columns.drop(target_columns).tolist() + target_columns]
 
         # Save to CSV
         df.to_csv(output_path, index=False)
