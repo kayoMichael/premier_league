@@ -6,6 +6,8 @@
 
 A comprehensive Python library for accessing and analyzing data for the Top 5 European Leagues, including match statistics, player leaders, and transfer information. The library provides methods to rapidly expose them as an API as well as Create Training Data for ML related Analysis.
 
+Sample ML project using the library: [Premier League Predictions](https://github.com/kayoMichael/Premier_League_Predictions)
+
 ## Installation
 
 ```bash
