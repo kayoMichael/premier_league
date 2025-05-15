@@ -54,12 +54,16 @@ class MatchStatistics(BaseDataSetScrapper):
         team: Team,
         game: Type[Game],
         lag: int,
+        weight_type: Literal["exp", "lin"] = None,
+        params: float = None,
         side: Literal["home", "away"] = "home",
     ) -> Union[dict[str, float], None]:
         """
         Calculate the Team Statistics with lag.
-        team: (Team) the team query
+        team: (Team) the Team Query
         game: (Game) The Game Object
+        lag: (lag) The Lag
+        Weights: (weight) The Weight
         side: (str) Home or Away
         """
         past_games = self.get_games_before_date(game.date, lag, team=team.name)
@@ -73,6 +77,13 @@ class MatchStatistics(BaseDataSetScrapper):
         same_season_stats = [game["game_stats"] for game in same_season_games]
         stats_history = []
 
+        weights = [1] * lag
+
+        if weight_type == "lin":
+            weights = [ind for ind in range(lag, 0, -1)]
+        elif weight_type == "exp":
+            weights = [params ** (k) for k in range(1, lag + 1)]
+
         for stats in same_season_stats:
             corresponding_team_stats = (
                 stats[0] if stats[0]["team_id"] == team.id else stats[1]
@@ -80,22 +91,49 @@ class MatchStatistics(BaseDataSetScrapper):
             if corresponding_team_stats["team_id"] == team.id:  # Safety check
                 stats_history.append(corresponding_team_stats)
 
-        n = len(stats_history)
-        if n == 0:
-            return None
+            if len(stats_history) == 0:
+                return None
 
-        removal = ["id", "game_id", "team_id"]
-        cleaned_up_history = [
-            {k: v for k, v in stat.items() if k not in removal}
-            for stat in stats_history
-        ]
+            removal = ["id", "game_id", "team_id", "save_percentage"]
+            cleaned_up_history = [
+                {k: v for k, v in stat.items() if k not in removal}
+                for stat in stats_history
+            ]
 
-        return {
-            f"{side}_{key}": sum(d[key] for d in cleaned_up_history) / n
-            for key in cleaned_up_history[0].keys()
-        }
+            data = {
+                f"{side}_{key}": sum(
+                    d[key] * weights[i] for i, d in enumerate(cleaned_up_history)
+                )
+                / sum(weights)
+                for key in cleaned_up_history[0].keys()
+            }
 
-    def create_dataset(self, output_path: str, rows_count: int = None, lag: int = 10):
+            valid_indices = [
+                i
+                for i, element in enumerate(stats_history)
+                if element.get("save_percentage")
+            ]
+            valid_percentages = [
+                stats_history[i].get("save_percentage") for i in valid_indices
+            ]
+            valid_weights = [weights[i] for i in valid_indices]
+
+            data[f"{side}_save_percentage"] = (
+                sum(p * w for p, w in zip(valid_percentages, valid_weights))
+                / sum(valid_weights)
+                if valid_percentages
+                else 0
+            )
+        return data
+
+    def create_dataset(
+        self,
+        output_path: str,
+        rows_count: int = None,
+        lag: int = 10,
+        weights: Literal["lin", "exp"] = None,
+        params: float = None,
+    ):
         """
         Create a CSV file containing game statistics for machine learning training. Currently max of 17520 Data Rows.
 
@@ -106,6 +144,8 @@ class MatchStatistics(BaseDataSetScrapper):
             output_path (str): The file path where the CSV file will be saved.
             rows_count (int, optional): The maximum number of rows to include in the dataset. Defaults to None. if given gets the last n rows. after sorting by date.
             lag (int): The number of days to lag the data. 10 indicates, the current row will use the stats for the team's past 10 game average (Where all earlier games are dropped).
+            weights (str, optional): Wheather to give importance to more recent games, No Weight will be added if lag = 1. Lin: Linear Weights, Exp: Exponential Weights
+            params (float, optional): The Parameter to base a Exponential Weighting strategy on. Only mandatory for exponential Weights.
         Returns:
             None
         """
@@ -115,6 +155,12 @@ class MatchStatistics(BaseDataSetScrapper):
             raise ValueError("rows_count must be a positive integer")
         elif lag <= 0:
             raise ValueError("lag must be at least 1")
+        elif weights and weights not in ["exp", "lin"]:
+            raise ValueError("Weights must be either exp or lin")
+        elif weights == "exp" and not params:
+            raise ValueError(
+                "Exponential parameter must be specified for exponential Weights."
+            )
 
         query = self.session.query(Game).options(
             joinedload(Game.game_stats),
@@ -149,8 +195,12 @@ class MatchStatistics(BaseDataSetScrapper):
             away_team = game.away_team
 
             # Calculate stats for both teams
-            home_stat = self.__calculate_team_stats(home_team, game, lag)
-            away_stat = self.__calculate_team_stats(away_team, game, lag, side="away")
+            home_stat = self.__calculate_team_stats(
+                home_team, game, lag, weights, params=params
+            )
+            away_stat = self.__calculate_team_stats(
+                away_team, game, lag, weights, params=params, side="away"
+            )
 
             if home_stat is None or away_stat is None:
                 continue

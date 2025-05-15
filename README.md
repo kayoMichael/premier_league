@@ -163,15 +163,20 @@ stats = MatchStatistics()
 stats.update_data_set()
 ```
 
-#### `create_dataset(output_path: str, rows_count:int = None, lag: int = 10)`
-Exports match statistics database as a Machine Learning dataset in CSV format. lag is the number of games to look back for each game.
-E.g. Lag=10 means in each row of game stats, the average stats of the last 10 games for each team will be used.
-```python
-# Export all Data
-MatchStatistics().create_dataset("premier_league_stats.csv", lag=2)
+#### `create_dataset(output_path: str, rows_count: int = None, lag: int = 10, weights: Literal["lin", "exp"] = None, params: float = None)`
 
-# Export 800 Data
-MatchStatistics().create_dataset("premier_league_stats.csv", rows_count=800)
+This method exports match statistics to a CSV file formatted for Machine Learning applications.
+
+- **`output_path` (str)**: The file path where the dataset will be saved.
+- **`rows_count` (int, optional)**: Number of data rows to export. If not specified, all available data is exported.
+- **`lag` (int, default = 10)**: The number of previous games to aggregate for each game. For example, with `lag=10`, the dataset will include the average statistics of the last 10 games for each team in each row.
+- **`weights` (str, optional)**: Determines how the previous games are weighted:
+  - `'lin'`: Linear weighting, where recent games have higher importance.
+  - `'exp'`: Exponential weighting, where recent games have exponentially higher importance.
+- **`params` (float, optional)**: Required when using exponential weighting. Specifies the base constant for exponential weight calculations.
+
+```python
+MatchStatistics().create_dataset("premier_league_stats.csv", lag=2)
 ```
 
 #### `get_total_game_count()`
