@@ -522,9 +522,9 @@ Example:
 
 ## Supported Oldest Seasons
 - Premier League : 1997,
-- La Liga": 2008,
-- Serie A": 2010,
-- Ligue 1": 2010,
+- La Liga: 2008,
+- Serie A: 2010,
+- Ligue 1: 2010,
 - Bundesliga": 1988,
 
 `find_season_limit` can be invoked to find the oldest supported seasons in `SeasonPlayerLeaders` class
@@ -638,10 +638,10 @@ Example:
 
 ## Supported Oldest Seasons
 - Premier League : 1946,
-- La Liga": 1928,
-- Serie A": 1946,
-- Ligue 1": 1945,
-- Bundesliga": 1963,
+- La Liga: 1928,
+- Serie A: 1946,
+- Ligue 1: 1945,
+- Bundesliga: 1963,
 
 `find_season_limit` can be invoked to find the oldest supported seasons in `SeasonPlayerLeaders` class
 
