@@ -1,7 +1,7 @@
 # Premier League Data Library
 
 ![Tests](https://github.com/kayoMichael/premier_league/actions/workflows/ci.yml/badge.svg)
-![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12-blue)
+![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-blue)
 [![PyPI version](https://img.shields.io/pypi/v/premier_league.svg)](https://pypi.org/project/premier-league/)
 
 A comprehensive Python library for accessing and analyzing data for the Top 5 European Leagues, including match statistics, player leaders, and transfer information. The library provides methods to rapidly expose them as an API as well as Create Training Data for ML related Analysis.
