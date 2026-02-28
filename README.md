@@ -9,6 +9,8 @@ A comprehensive Python library for accessing and analyzing data for the Top 5 Eu
 
 Sample ML project using the library: [Premier League Predictions](https://github.com/kayoMichael/Premier_League_Predictions)
 
+Mintlify Documentation: [Mintlify](https://kayomichael-premier_league.mintlify.app/introduction)
+
 ## Installation
 
 ```bash
