@@ -241,11 +241,9 @@ class BaseScrapper:
 
         if isinstance(index_from, int) and isinstance(index_to, int):
             element = element[index_from:index_to]
-
-        if isinstance(index_to, int):
+        elif isinstance(index_to, int):
             element = element[:index_to]
-
-        if isinstance(index_from, int):
+        elif isinstance(index_from, int):
             element = element[index_from:]
 
         if isinstance(join_str, str):

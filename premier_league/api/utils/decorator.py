@@ -4,6 +4,23 @@ from functools import wraps
 from flask import after_this_request, current_app, g
 
 
+def _cleanup_files_dir():
+    """
+    Remove the ``files`` export directory, but only when it is empty.
+
+    ``os.removedirs`` only succeeds on an empty leaf directory, so this guards
+    on emptiness and swallows any ``OSError`` so that callers (in particular the
+    request error path) can never have the original exception masked by a
+    cleanup failure.
+    """
+    try:
+        if os.path.isdir("files") and not os.listdir("files"):
+            os.rmdir("files")
+            current_app.logger.info("Cleaned up empty directory: files")
+    except OSError as e:
+        current_app.logger.error(f"Error removing files directory: {str(e)}")
+
+
 def safe_file_cleanup(func):
     """
     A decorator that ensures temporary files are properly cleaned up after a Flask request,
@@ -37,11 +54,7 @@ def safe_file_cleanup(func):
                         current_app.logger.info(
                             f"Successfully deleted file: {file_path}"
                         )
-                    if os.path.exists("files") and any(os.scandir("files")):
-                        os.removedirs("files")
-                        current_app.logger.info(
-                            f"Cleaned up directory after error: files"
-                        )
+                    _cleanup_files_dir()
                 except Exception as e:
                     current_app.logger.error(
                         f"Error deleting file {file_path}: {str(e)}"
@@ -60,9 +73,7 @@ def safe_file_cleanup(func):
                     current_app.logger.error(
                         f"Error during cleanup: {str(cleanup_error)}"
                     )
-            if os.path.exists("files") and any(os.scandir("files")):
-                os.removedirs("files")
-                current_app.logger.info(f"Cleaned up directory after error: files")
+            _cleanup_files_dir()
             raise e
 
     return wrapper

@@ -239,6 +239,7 @@ class MatchStatistics(BaseDataSetScrapper):
                 self.session.query(Team)
                 .options(joinedload(Team.home_games), joinedload(Team.away_games))
                 .filter(Team.name == team)
+                .filter(Team.home_games.any(Game.season == season) | Team.away_games.any(Game.season == season))
                 .first()
             )
             return team.home_games + team.away_games

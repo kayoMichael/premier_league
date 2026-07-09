@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 
 class PredictorURL:
@@ -37,13 +38,18 @@ class RANKING_URL:
     }
 
     @classmethod
-    def get(cls, league: str, target_season: str) -> str:
+    def get(cls, league: str, target_season: Optional[str]) -> str:
         """Returns all formatted URLs for the given season."""
         league = league.strip()
         if league not in cls.BASE_URLS:
             raise ValueError(
                 f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
             )
+        if target_season is None:
+            # No season provided means the current season, which always maps
+            # to the most recent (highest-key) URL template for the league.
+            latest_season = max(cls.BASE_URLS[league].keys())
+            return cls.BASE_URLS[league][latest_season]
         if target_season[0:4].isdigit():
             target_season = int(target_season[0:4])
             if target_season > datetime.now().year:

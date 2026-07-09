@@ -411,7 +411,8 @@ class RankingTable(BaseScrapper):
                         [i for i in self.ranking_list if team in i][0]
                     )
                 except IndexError:
-                    pass
+                    # Team not present in the ranking table; skip styling it.
+                    continue
                 style.append(
                     ("BACKGROUND", (0, team_index), (-1, team_index), colors[index])
                 )
