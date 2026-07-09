@@ -43,8 +43,8 @@ Anyone is Welcome to Contribute and Fix an Exisiting Issue or a new Problem.
 
 This project uses [uv](https://github.com/astral-sh/uv) for dependency management. [Install uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 ```bash
-# Create the virtual environment and install the package with all extras + test tooling
-uv sync --all-extras --dev
+# Create the .venv and install the package, all optional extras, and test tooling
+uv sync
 
 # Run the test suite
 uv run pytest

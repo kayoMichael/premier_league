@@ -65,6 +65,7 @@ dev = [
     "isort>=5.13.0",
     "pylint>=3.0.0",
     "pre-commit>=3.5.0",
+    "premier-league[all]",
 ]
 
 [tool.hatch.version]
