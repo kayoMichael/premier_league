@@ -167,7 +167,7 @@ class TestMatchStatistics:
         team = MagicMock()
         team.home_games = ["Manchester United", "NewCastle United"]
         team.away_games = ["Nottingham Forest FC"]
-        match_statistics.session.query.return_value.options.return_value.filter.return_value.first.return_value = (
+        match_statistics.session.query.return_value.options.return_value.filter.return_value.filter.return_value.first.return_value = (
             team
         )
 

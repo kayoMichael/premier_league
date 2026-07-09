@@ -13,70 +13,41 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
       with:
+        enable-cache: true
         python-version: '3.12'
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install lxml system dependencies
-      run: sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt1-dev
-
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --use-pep517 -e ".[all]"
-        pip install -r requirements-test.txt
-        pip install pylint
+      run: uv sync --all-extras --dev
 
     - name: Lint with pylint
-      run: |
-        PYTHONPATH=./premier_league pylint premier_league/ tests/ --disable=all --enable=E,F
+      run: PYTHONPATH=./premier_league uv run pylint premier_league/ tests/ --disable=all --enable=E,F
 
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12' ]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
       with:
+        enable-cache: true
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
-
-    - name: Install lxml system dependencies
-      run: sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt1-dev
-
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --use-pep517 -e ".[all]"
-        pip install -r requirements-test.txt
-        pip install pytest-html
+      run: uv sync --all-extras --dev
 
     - name: Test with pytest and generate HTML report
       run: |
         mkdir -p test-reports
-        pytest tests/ -v --html=test-reports/report.html
+        uv run pytest tests/ -v --html=test-reports/report.html --self-contained-html
 
     - name: Upload test results
       uses: actions/upload-artifact@v4

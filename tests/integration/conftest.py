@@ -19,4 +19,8 @@ def force_live(request):
 def vcr_config(force_live):
     return {
         "record_mode": "all" if force_live else "once",
+        # Store/replay response bodies decompressed so cassette playback does not
+        # depend on the client's Content-Encoding handling. Without this, gzip
+        # cassettes recorded under urllib3 1.x fail to decode under urllib3 2.x.
+        "decode_compressed_response": True,
     }

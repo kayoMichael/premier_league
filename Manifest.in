@@ -1,8 +1,0 @@
-include README.md
-exclude tests/*
-exclude requirements-test.txt
-global-exclude *.pyc
-global-exclude __pycache__/*
-include premier_league/data/*.sql
-include LICENSE.md
-include DATA_DISCLAIMER.md

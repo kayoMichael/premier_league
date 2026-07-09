@@ -1,9 +1,10 @@
 # Premier League Data Library
 
 ![Tests](https://github.com/kayoMichael/premier_league/actions/workflows/ci.yml/badge.svg)
-![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12-blue)
+![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue)
 [![PyPI version](https://img.shields.io/pypi/v/premier_league.svg)](https://pypi.org/project/premier-league/)
 [![Downloads](https://img.shields.io/pepy/dt/premier-league)](https://pepy.org/project/premier-league)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 A comprehensive Python library for accessing and analyzing data for the Top 5 European Leagues, including match statistics, player leaders, and transfer information. The library provides methods to rapidly expose them as an API as well as Create Training Data for ML related Analysis.
 
@@ -38,14 +39,23 @@ pip install premier_league[all]
 ```
 
 ## Local Development
-Anyone is Welcome to Contribute and Fix an Exisiting Issue or a new Problem
+Anyone is Welcome to Contribute and Fix an Exisiting Issue or a new Problem.
+
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management. [Install uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 ```bash
-pip install -e .
-pip install -r requirements-test.txt # Only Required to run tests
+# Create the virtual environment and install the package with all extras + test tooling
+uv sync --all-extras --dev
+
+# Run the test suite
+uv run pytest
 
 # Install pre-commit for style checks (Optional)
-pip install pre-commit
-pre-commit install
+uv run pre-commit install
+```
+
+uv automatically provisions the right Python interpreter. To run the tests against a specific version:
+```bash
+uv run --python 3.14 pytest
 ```
 
 ## Features

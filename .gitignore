@@ -6,6 +6,10 @@
 **/files
 *.egg-info/
 dist/
+build/
+.venv/
+.pytest_cache/
+test-reports/
 .DS_Store
 cache/
 main.py
