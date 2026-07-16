@@ -21,6 +21,30 @@ class PredictorURL:
             )
         return cls.BASE_URLS[league.lower()].format(SEASON=season)
 
+class MatchUrl:
+    BASE_URLS = {
+        "premier league": "https://www.fotmob.com/leagues/47/overview/premier-league?season={SEASON}",
+        "la liga": "https://www.fotmob.com/leagues/87/overview/laliga?season={SEASON}",
+        "serie a": "https://www.fotmob.com/leagues/55/overview/serie?season={SEASON}",
+        "ligue 1": "https://www.fotmob.com/leagues/53/overview/ligue-1?season={SEASON}",
+        "bundesliga": "https://www.fotmob.com/leagues/54/overview/bundesliga?season={SEASON}",
+        "mls": "https://www.fotmob.com/leagues/130/overview/mls?season={SEASON}"
+    }
+
+    @classmethod
+    def get(cls, season: str, league: str) -> str:
+        """Returns all formatted URLs for the given season."""
+        if league.lower() not in cls.Base_URLs:
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.Base_URLs.keys())}"
+            )
+
+        if league.lower() == "mls" and "-" in season:
+            raise ValueError(
+                f"Season format {season} not supported. For mls seasons, please use single season digits. ie. 2018"
+            )
+        return cls.BASE_URLS[league.lower()].format(SEASON=season)
+
 
 class RANKING_URL:
     BASE_URLS = {
