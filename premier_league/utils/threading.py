@@ -1,7 +1,7 @@
 import inspect
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
-from typing import Callable, List, Optional, TypeVar
+from typing import Callable, List, Optional, TypeVar, Any
 
 from tqdm import tqdm
 
@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 def run_threaded(
     func: Callable[..., T],
-    items: List[any],
+    items: List[Any],
     desc: str = "Processing",
     unit: str = "items",
     max_workers: Optional[int] = None,
