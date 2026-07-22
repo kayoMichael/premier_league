@@ -1,5 +1,5 @@
 import inspect
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from typing import Callable, List, Optional, TypeVar, Any
 

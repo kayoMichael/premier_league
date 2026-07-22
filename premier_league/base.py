@@ -278,7 +278,7 @@ class BaseDataSetScrapper:
         self, url, pbar, rate_limit, return_html
     ) -> Union[etree.ElementTree, str, None]:
         """
-        Fetch a page from the given URL with rate limits and progress bar.
+        Fetch a page from the given URL with rate limits and progress bar. Only rate limits on cache miss
 
         Args:
             url (str): The URL to fetch.
@@ -308,7 +308,8 @@ class BaseDataSetScrapper:
 
             html = response.text
             pbar.update(1)
-            time.sleep(rate_limit)
+            if not response.from_cache:
+                time.sleep(rate_limit)
             return etree.HTML(html) if not return_html else html
 
         except Exception as e:
