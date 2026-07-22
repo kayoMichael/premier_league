@@ -4,7 +4,7 @@ from premier_league.utils.methods import current_season
 from premier_league.utils.xpath import MATCHES, XPathElement
 
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import json, time
 
 OUT = Path("matches")
@@ -54,26 +54,34 @@ class MatchPipeline(BaseDataSetScrapper):
         data = json.loads(script)
 
         fixtures = data["props"]["pageProps"]["fixtures"]["allMatches"]
-        match_id = [int(m_id['id']) for m_id in fixtures]
+        matches = [(int(m["id"]), m["pageUrl"]) for m in fixtures]
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page()
 
-            for mid in match_id:
+            for mid, pageUrl in matches:
                 out_file = OUT / f"{mid}.json"
                 if out_file.exists():
                     continue
 
-                with page.expect_response(
-                    lambda r: "matchDetails" in r.url and r.status == 200,
-                    timeout=20000
-                ) as resp_info:
-                    page.goto(f"https://www.fotmob.com/match/{mid}")
+                try:
+                    with page.expect_response(lambda r, mid=mid: "matchDetails" in r.url and f"matchId={mid}" in r.url
+                                                                 and r.status == 200,
+                                              timeout=20000) as resp_info:
+                        page.goto(f"https://www.fotmob.com{pageUrl}",
+                                  wait_until="domcontentloaded")
 
-                data = resp_info.value.json()
-                out_file.write_text(json.dumps(data, indent=2))
-                print(f"saved {mid}: {data['general']['matchName']}")
-                time.sleep(4)
+                    data = resp_info.value.json()
+                    got_id = str(data.get("general", {}).get("matchId"))
+                    if data.get("error") or got_id != str(mid):
+                        print(f"bad payload for {mid}: {data.get('message')}")
+
+                    out_file.write_text(json.dumps(data, indent=2))
+                    print(f"saved {mid}: {data['general']['matchName']}")
+                    time.sleep(4)
+                except PWTimeout:
+                    print(f"timeout on {mid}, skipping")
+                    continue
 
 if __name__ == '__main__':
     scraper = MatchPipeline()
