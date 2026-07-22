@@ -3,7 +3,12 @@ from premier_league.utils.url import MatchUrl, MATCH_STATISTICS_LEAGUE
 from premier_league.utils.methods import current_season
 from premier_league.utils.xpath import MATCHES, XPathElement
 
-import json
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+import json, time
+
+OUT = Path("matches")
+OUT.mkdir(exist_ok=True)
 
 class MatchPipeline(BaseDataSetScrapper):
     def __init__(self):
@@ -42,15 +47,33 @@ class MatchPipeline(BaseDataSetScrapper):
 
         self.scrape_and_process_all(urls, rate_limit=4, return_html=False)
 
-    def extract_all_url(self, root: XPathElement, url: str):
+    @staticmethod
+    def extract_all_url(root: XPathElement, url: str):
         script = root.xpath(MATCHES.MATCH_URLS)[0]
 
         data = json.loads(script)
 
-        fixtures = data["props"]["pageProps"]["fixtures"]
-        urls = ["https://www.fotmob.com" + match["pageUrl"] for match in fixtures["allMatches"]]
+        fixtures = data["props"]["pageProps"]["fixtures"]["allMatches"]
+        match_id = [int(m_id['id']) for m_id in fixtures]
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page()
 
-        result = self.scrape_and_process_all(urls, rate_limit=4, return_html=False)
+            for mid in match_id:
+                out_file = OUT / f"{mid}.json"
+                if out_file.exists():
+                    continue
+
+                with page.expect_response(
+                    lambda r: "matchDetails" in r.url and r.status == 200,
+                    timeout=20000
+                ) as resp_info:
+                    page.goto(f"https://www.fotmob.com/match/{mid}")
+
+                data = resp_info.value.json()
+                out_file.write_text(json.dumps(data, indent=2))
+                print(f"saved {mid}: {data['general']['matchName']}")
+                time.sleep(4)
 
 if __name__ == '__main__':
     scraper = MatchPipeline()
