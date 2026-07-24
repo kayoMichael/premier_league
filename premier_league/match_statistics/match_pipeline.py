@@ -2,6 +2,7 @@ from premier_league.base import BaseDataSetScrapper
 from premier_league.utils.url import MatchUrl, MATCH_STATISTICS_LEAGUE
 from premier_league.utils.methods import current_season
 from premier_league.utils.xpath import MATCHES, XPathElement
+import sqlite3
 
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
@@ -11,8 +12,10 @@ OUT = Path("matches")
 OUT.mkdir(exist_ok=True)
 
 class MatchPipeline(BaseDataSetScrapper):
-    def __init__(self):
+    def __init__(self, db_name="matches.db"):
         super().__init__()
+        self.matches = None
+        self.conn = sqlite3.connect(db_name)
 
     def process_data(self):
         urls = []
@@ -47,19 +50,19 @@ class MatchPipeline(BaseDataSetScrapper):
 
         self.scrape_and_process_all(urls, rate_limit=4, return_html=False)
 
-    @staticmethod
-    def extract_all_url(root: XPathElement, url: str):
+    def extract_all_url(self, root: XPathElement, url: str):
         script = root.xpath(MATCHES.MATCH_URLS)[0]
 
         data = json.loads(script)
 
         fixtures = data["props"]["pageProps"]["fixtures"]["allMatches"]
-        matches = [(int(m["id"]), m["pageUrl"]) for m in fixtures]
+        import pdb; pdb.set_trace()
+        self.matches = [(int(m["id"]), m["pageUrl"]) for m in fixtures]
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page()
 
-            for mid, pageUrl in matches:
+            for mid, pageUrl in self.matches:
                 out_file = OUT / f"{mid}.json"
                 if out_file.exists():
                     continue
@@ -75,6 +78,7 @@ class MatchPipeline(BaseDataSetScrapper):
                     got_id = str(data.get("general", {}).get("matchId"))
                     if data.get("error") or got_id != str(mid):
                         print(f"bad payload for {mid}: {data.get('message')}")
+                        continue
 
                     out_file.write_text(json.dumps(data, indent=2))
                     print(f"saved {mid}: {data['general']['matchName']}")
@@ -82,6 +86,27 @@ class MatchPipeline(BaseDataSetScrapper):
                 except PWTimeout:
                     print(f"timeout on {mid}, skipping")
                     continue
+
+
+    def insert_into_db(self, season):
+        self.conn.execute("PRAGMA foreign_keys = ON")
+
+        for mid, pageUrl in self.matches:
+            out_file = OUT / f"{mid}.json"
+            if not out_file.exists():
+                continue
+
+            with out_file.open() as f:
+                data = json.load(f)
+
+
+            with self.conn:
+                self._insert_match_statistics(data)
+
+
+    def _insert_match_statistics(self, data: dict):
+        pass
+
 
 if __name__ == '__main__':
     scraper = MatchPipeline()
