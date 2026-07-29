@@ -89,8 +89,6 @@ class MatchPipeline(BaseDataSetScrapper):
 
 
     def insert_into_db(self, season):
-        self.conn.execute("PRAGMA foreign_keys = ON")
-
         for mid, pageUrl in self.matches:
             out_file = OUT / f"{mid}.json"
             if not out_file.exists():
