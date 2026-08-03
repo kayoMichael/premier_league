@@ -2,6 +2,8 @@
 -- Premier League Library — SQLite schema
 -- FotMob-sourced football database.
 --
+-- Initialize once:   sqlite3 pl.db < schema.sql
+-- or in Python:      conn.executescript(open("schema.sql").read())
 --
 -- Design notes:
 --   * Natural FotMob IDs are the PKs for leagues, teams, players, matches
@@ -117,11 +119,13 @@ CREATE TABLE IF NOT EXISTS players (
     last_name         TEXT,
     common_name       TEXT,
     nationality       TEXT,
+    country_code      TEXT,
     birth_date        DATE,
     height_cm         INTEGER,
     preferred_foot    TEXT,
     primary_position  TEXT,
     photo_url         TEXT,
+    opta_id           TEXT,                        -- cross-reference to Opta datasets
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -242,6 +246,11 @@ CREATE TABLE IF NOT EXISTS matches (
     stadium_name             TEXT,
     stadium_city             TEXT,
     stadium_country          TEXT,
+    stadium_lat              REAL,
+    stadium_long             REAL,
+    stadium_capacity         INTEGER,
+    stadium_surface          TEXT,                 -- e.g. 'artificial turf'
+    highlights_url           TEXT,                 -- YouTube highlights link
     scraped_at               DATETIME,
     created_at               DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at               DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -252,13 +261,17 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- -----------------------------------------------------------------------------
--- MATCH_TEAM_STATS  (one row per team per match — exactly two per match)
+-- MATCH_TEAM_STATS  (one row per team per match PER PERIOD)
+-- period: 'All' = full match, plus 'FirstHalf', 'SecondHalf', and extra-time
+-- periods when present. 'All' is NOT the sum of a subset — ALWAYS filter on
+-- period (the views default to 'All'); summing across periods double-counts.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS match_team_stats (
     match_id           INTEGER NOT NULL,
     team_id            INTEGER NOT NULL,
+    period             TEXT NOT NULL DEFAULT 'All',
     is_home            INTEGER NOT NULL,           -- boolean 0/1
-    formation          TEXT,
+    formation          TEXT,                       -- populated on 'All' rows only
     xg                 REAL,
     xgot               REAL,
     shots              INTEGER,
@@ -284,8 +297,8 @@ CREATE TABLE IF NOT EXISTS match_team_stats (
     red_cards          INTEGER,
     created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (match_id, team_id),
-    UNIQUE (match_id, is_home),                    -- can't have two home rows
+    PRIMARY KEY (match_id, team_id, period),
+    UNIQUE (match_id, is_home, period),            -- can't have two home rows per period
     FOREIGN KEY (match_id) REFERENCES matches(id),
     FOREIGN KEY (team_id)  REFERENCES teams(id)
 );
@@ -396,6 +409,10 @@ CREATE TABLE IF NOT EXISTS appearances (
     accurate_keeper_passes     INTEGER,
     attempted_keeper_passes    INTEGER,
     keeper_pass_accuracy_pct   REAL,
+    dispossessed               INTEGER,
+    dribbled_past              INTEGER,
+    market_value               INTEGER,            -- valuation snapshot at match time
+    age_at_match               INTEGER,
     created_at                 DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at                 DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (match_id, player_id),
@@ -478,6 +495,8 @@ CREATE TABLE IF NOT EXISTS shots (
     is_from_penalty      INTEGER,
     is_first_time        INTEGER,
     is_header            INTEGER,
+    is_from_inside_box   INTEGER,
+    is_saved_off_line    INTEGER,
     created_at           DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (match_id)       REFERENCES matches(id),
     FOREIGN KEY (match_event_id) REFERENCES match_events(id),
@@ -544,6 +563,47 @@ CREATE TABLE IF NOT EXISTS season_squad_players (
     FOREIGN KEY (team_id)         REFERENCES teams(id)
 );
 
+-- -----------------------------------------------------------------------------
+-- COACHES  (managers; from lineup.<side>.coach)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS coaches (
+    id            INTEGER PRIMARY KEY,             -- FotMob coach ID
+    name          TEXT NOT NULL,
+    first_name    TEXT,
+    last_name     TEXT,
+    country_code  TEXT,
+    country_name  TEXT,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- -----------------------------------------------------------------------------
+-- MATCH_COACHES  (who managed which team in which match)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS match_coaches (
+    match_id   INTEGER NOT NULL,
+    team_id    INTEGER NOT NULL,
+    coach_id   INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (match_id, team_id),
+    FOREIGN KEY (match_id) REFERENCES matches(id),
+    FOREIGN KEY (team_id)  REFERENCES teams(id),
+    FOREIGN KEY (coach_id) REFERENCES coaches(id)
+);
+
+-- -----------------------------------------------------------------------------
+-- MATCH_MOMENTUM  (minute-by-minute momentum swing, -100..100; positive = home.
+-- minute is REAL: FotMob uses 45.5 / 90.5 for stoppage-time points.)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS match_momentum (
+    match_id   INTEGER NOT NULL,
+    minute     REAL NOT NULL,
+    value      REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (match_id, minute),
+    FOREIGN KEY (match_id) REFERENCES matches(id)
+);
+
 -- =============================================================================
 -- INDEXES  (FKs + common filter columns)
 -- =============================================================================
@@ -556,7 +616,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_home_team         ON matches(home_team_id
 CREATE INDEX IF NOT EXISTS idx_matches_away_team         ON matches(away_team_id);
 CREATE INDEX IF NOT EXISTS idx_matches_kickoff           ON matches(kickoff_time_utc);
 CREATE INDEX IF NOT EXISTS idx_matches_season_status     ON matches(season_id, status);
-CREATE INDEX IF NOT EXISTS idx_mts_team                  ON match_team_stats(team_id);
+CREATE INDEX IF NOT EXISTS idx_mts_team                  ON match_team_stats(team_id, period);
 CREATE INDEX IF NOT EXISTS idx_appearances_player        ON appearances(player_id);
 CREATE INDEX IF NOT EXISTS idx_appearances_team          ON appearances(team_id);
 CREATE INDEX IF NOT EXISTS idx_events_match              ON match_events(match_id);
@@ -569,13 +629,14 @@ CREATE INDEX IF NOT EXISTS idx_awards_season             ON season_awards(season
 CREATE INDEX IF NOT EXISTS idx_awards_player             ON season_awards(player_id);
 CREATE INDEX IF NOT EXISTS idx_squads_season             ON season_squads(season_id);
 CREATE INDEX IF NOT EXISTS idx_squad_players_player      ON season_squad_players(player_id);
+CREATE INDEX IF NOT EXISTS idx_match_coaches_coach       ON match_coaches(coach_id);
 
 -- =============================================================================
 -- VIEWS  (the agent-facing query surface)
 -- =============================================================================
 
--- One row per team per match: opponent, venue, result, and stats.
--- The workhorse for team form/analytics — no home/away CASE logic needed.
+-- One row per team per match (FULL-MATCH stats only, period='All'):
+-- opponent, venue, result, and stats. The workhorse for team form/analytics.
 CREATE VIEW IF NOT EXISTS v_team_match AS
 SELECT
     mts.match_id,
@@ -599,6 +660,29 @@ SELECT
 FROM match_team_stats mts
 JOIN matches m  ON m.id = mts.match_id
 JOIN teams   t  ON t.id = mts.team_id
+JOIN teams   opp ON opp.id = CASE WHEN mts.is_home THEN m.away_team_id ELSE m.home_team_id END
+WHERE mts.period = 'All';
+
+-- Period-aware variant for half-by-half analysis. One row per team per match
+-- per period. REMEMBER: 'All' duplicates the halves — filter or group by
+-- period, never SUM across all rows of this view.
+CREATE VIEW IF NOT EXISTS v_team_period AS
+SELECT
+    mts.match_id,
+    m.season_id,
+    m.kickoff_time_utc,
+    mts.period,
+    mts.team_id,
+    t.name              AS team_name,
+    CASE WHEN mts.is_home THEN m.away_team_id ELSE m.home_team_id END AS opponent_id,
+    opp.name            AS opponent_name,
+    mts.is_home,
+    mts.xg, mts.xgot, mts.shots, mts.shots_on_target, mts.big_chances,
+    mts.possession_pct, mts.pass_accuracy_pct, mts.corners,
+    mts.tackles, mts.interceptions, mts.saves, mts.yellow_cards, mts.red_cards
+FROM match_team_stats mts
+JOIN matches m  ON m.id = mts.match_id
+JOIN teams   t  ON t.id = mts.team_id
 JOIN teams   opp ON opp.id = CASE WHEN mts.is_home THEN m.away_team_id ELSE m.home_team_id END;
 
 -- Both teams side by side for a single match (the old wide shape, on demand).
@@ -614,8 +698,8 @@ SELECT
     h.corners AS home_corners, a.corners AS away_corners,
     w.temperature, w.description AS weather_description
 FROM matches m
-JOIN match_team_stats h ON h.match_id = m.id AND h.is_home = 1
-JOIN match_team_stats a ON a.match_id = m.id AND a.is_home = 0
+JOIN match_team_stats h ON h.match_id = m.id AND h.is_home = 1 AND h.period = 'All'
+JOIN match_team_stats a ON a.match_id = m.id AND a.is_home = 0 AND a.period = 'All'
 LEFT JOIN match_weather w ON w.match_id = m.id;
 
 -- Appearances enriched with names + match context.

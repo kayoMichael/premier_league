@@ -1,0 +1,40 @@
+from typing import Optional
+from dataclasses import dataclass
+
+@dataclass
+class MatchRecord:
+    id: Optional[int] = None
+    # season hints — pipeline resolves these to seasons.id before insert
+    league_id: Optional[int] = None
+    parent_league_id: Optional[int] = None
+    league_name: Optional[str] = None
+    home_team_id: Optional[int] = None
+    away_team_id: Optional[int] = None
+    home_team_name: Optional[str] = None
+    away_team_name: Optional[str] = None
+    match_name: Optional[str] = None
+    round: Optional[str] = None
+    round_name: Optional[str] = None
+    kickoff_time_utc: Optional[str] = None
+    status: Optional[str] = None
+    home_score: Optional[int] = None
+    away_score: Optional[int] = None
+    home_halftime_score: Optional[int] = None
+    away_halftime_score: Optional[int] = None
+    home_penalty_score: Optional[int] = None
+    away_penalty_score: Optional[int] = None
+    winner_team_id: Optional[int] = None
+    result_string: Optional[str] = None
+    referee_name: Optional[str] = None
+    attendance: Optional[int] = None
+    stadium_name: Optional[str] = None
+    stadium_city: Optional[str] = None
+    stadium_country: Optional[str] = None
+    stadium_lat: Optional[float] = None
+    stadium_long: Optional[float] = None
+    stadium_capacity: Optional[int] = None
+    stadium_surface: Optional[str] = None
+    highlights_url: Optional[str] = None
+    coverage_level: Optional[str] = None
+    finished: Optional[bool] = None
+    cancelled: Optional[bool] = None
