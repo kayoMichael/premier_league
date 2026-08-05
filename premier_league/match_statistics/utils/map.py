@@ -2,6 +2,7 @@ TEAM_STAT_MAP = {
     "BallPossesion": "possession_pct",  # sic — FotMob's typo
     "expected_goals": "xg",
     "expected_goals_on_target": "xgot",
+    "expected_goals_set_play": "xgsp",
     "total_shots": "shots",
     "ShotsOnTarget": "shots_on_target",
     "blocked_shots": "blocked_shots",
@@ -11,6 +12,8 @@ TEAM_STAT_MAP = {
     "fouls": "fouls",
     "Offsides": "offsides",
     "corners": "corners",
+    "shots_woodwork": "shots_woodwork",
+    "touches_opp_box": "touches_opp_box",
     "matchstats.headers.tackles": "tackles",
     "interceptions": "interceptions",
     "clearances": "clearances",
@@ -28,14 +31,17 @@ TEAM_FRACTION_MAP = {
 # team keys we see but deliberately don't store (don't warn about these)
 TEAM_IGNORED = {
     "shots", "expected_goals_open_play", "expected_goals_set_play",
-    "expected_goals_non_penalty", "ShotsOffTarget", "shots_woodwork",
+    "expected_goals_non_penalty", "ShotsOffTarget",
     "shots_inside_box", "shots_outside_box", "own_half_passes",
     "opposition_half_passes", "long_balls_accurate", "accurate_crosses",
-    "player_throws", "touches_opp_box", "ground_duels_won",
+    "player_throws", "ground_duels_won",
     "dribbles_succeeded", "discipline", "duels", "defense", "passes",
+    "physical_metrics_running", "physical_metrics_running", "physical_metrics_distance_covered",
+    "physical_metrics_number_of_sprints", "physical_metrics_sprinting", "physical_metrics_walking"
 }
 
 PLAYER_STAT_MAP = {
+    "penalties_won": ("penalties_won", int),
     "rating_title": ("rating", float),
     "minutes_played": ("minutes_played", int),
     "goals": ("goals", int),
@@ -43,6 +49,8 @@ PLAYER_STAT_MAP = {
     "expected_goals": ("xg", float),
     "expected_assists": ("xa", float),
     "xg_and_xa": ("xg_plus_xa", float),
+    "expected_goals_non_penalty": ("npxg", float),
+    "errors_led_to_goal": ("errors_led_to_goal", int),
     "expected_goals_on_target_variant": ("xgot", float),
     "total_shots": ("shots", int),
     "ShotsOnTarget": ("shots_on_target", int),
@@ -66,6 +74,12 @@ PLAYER_STAT_MAP = {
     "conceded_penalties": ("penalties_conceded", int),
     "dispossessed": ("dispossessed", int),
     "dribbled_past": ("dribbled_past", int),
+    "shots_woodwork": ("hit_woodwork", int),
+    "last_man_tackle": ("last_man_tackle", int),
+    "clearance_off_the_line": ("clearance_off_the_line", int),
+    "crosses": ("crosses", int),
+    "missed_penalty": ("missed_penalty", int),
+    "owngoal": ("own_goal", int),
     # keeper
     "saves": ("saves", int),
     "goals_conceded": ("goals_conceded", int),
@@ -73,6 +87,8 @@ PLAYER_STAT_MAP = {
     "punches": ("punches", int),
     "keeper_high_claim": ("high_claims", int),
     "keeper_sweeper": ("sweeper_actions", int),
+    "saved_penalties_in_shootout": ("saved_penalties_in_shootout", int),
+    "saved_penalties": ("saved_penalties", int),
 }
 # fractionWithPercentage keys -> (value_col, total_col, pct_col_or_None)
 PLAYER_FRACTION_MAP = {
@@ -85,9 +101,14 @@ PLAYER_FRACTION_MAP = {
 }
 PLAYER_IGNORED = {
     "Shotmap", "defensive_actions", "shot_accuracy", "ShotsOffTarget",
-    "expected_goals_non_penalty",
     "duel_lost", "keeper_diving_save", "saves_inside_box", "player_throws",
-    "expected_goals_on_target_faced", "corners",
+    "expected_goals_on_target_faced", "corners", "physical_metrics_distance_covered",
+    "physical_metrics_walking",
+    "physical_metrics_running",
+    "physical_metrics_sprinting",
+    "physical_metrics_topspeed",
+    "physical_metrics_number_of_sprints",
+    "fantasy_points"
 }
 
 SHOT_OUTCOME = {  # eventType (+isBlocked) -> outcome label

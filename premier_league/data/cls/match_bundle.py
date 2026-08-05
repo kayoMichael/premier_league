@@ -8,6 +8,17 @@ from premier_league.data.cls.appearance_record import AppearanceRecord
 from premier_league.data.cls.event_record import EventRecord
 from premier_league.data.cls.momentum_record import MomentumRecord
 
+
+@dataclass
+class ParseContext:
+    """Accumulator threaded through the section parsers while parsing is in
+    flight — collects observability output (warnings, unknown stat keys)
+    WITHOUT needing a half-built bundle. The bundle is constructed once, at
+    the end of parse_match(), from finished records + this context."""
+    warnings: list[str] = field(default_factory=list)
+    unmapped_keys: set[str] = field(default_factory=set)
+
+
 @dataclass
 class MatchBundle:
     match: MatchRecord

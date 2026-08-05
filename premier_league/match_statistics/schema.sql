@@ -13,7 +13,7 @@
 --     mix the two grains in one query or you double-count.
 --   * average_rating and any *_pct column CANNOT be summed.
 --   * Query the views (bottom) for team/player/match analytics, not the base
---     tables — they avoid hand-written home/away CASE logic.
+--     tables: they avoid hand-written home/away CASE logic.
 -- =============================================================================
 
 PRAGMA foreign_keys = ON;
@@ -274,6 +274,7 @@ CREATE TABLE IF NOT EXISTS match_team_stats (
     formation          TEXT,                       -- populated on 'All' rows only
     xg                 REAL,
     xgot               REAL,
+    xgsp               REAL,
     shots              INTEGER,
     shots_on_target    INTEGER,
     blocked_shots      INTEGER,
@@ -292,6 +293,8 @@ CREATE TABLE IF NOT EXISTS match_team_stats (
     blocks             INTEGER,
     duels_won          INTEGER,
     aerial_duels_won   INTEGER,
+    touches_opp_box    INTEGER,
+    shots_woodwork     INTEGER,
     saves              INTEGER,
     yellow_cards       INTEGER,
     red_cards          INTEGER,
@@ -354,6 +357,7 @@ CREATE TABLE IF NOT EXISTS appearances (
     xa                         REAL,
     xg_plus_xa                 REAL,
     xgot                       REAL,
+    npxg                       REAL,
     shots                      INTEGER,
     shots_on_target            INTEGER,
     blocked_shots              INTEGER,
@@ -403,7 +407,9 @@ CREATE TABLE IF NOT EXISTS appearances (
     goals_prevented            REAL,
     clean_sheet                INTEGER,            -- boolean 0/1
     punches                    INTEGER,
+    saved_penalties_in_shootout INTEGER,
     high_claims                INTEGER,
+    own_goal                   INTEGER,
     keeper_recoveries          INTEGER,
     sweeper_actions            INTEGER,
     accurate_keeper_passes     INTEGER,
@@ -413,6 +419,12 @@ CREATE TABLE IF NOT EXISTS appearances (
     dribbled_past              INTEGER,
     market_value               INTEGER,            -- valuation snapshot at match time
     age_at_match               INTEGER,
+    hit_woodwork               INTEGER,
+    last_man_tackle            INTEGER,
+    clearance_off_the_line     INTEGER,
+    crosses                    INTEGER,
+    missed_penalty             INTEGER,
+    saved_penalties            INTEGER,
     created_at                 DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at                 DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (match_id, player_id),

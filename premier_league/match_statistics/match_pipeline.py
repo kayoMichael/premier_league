@@ -10,24 +10,35 @@ from premier_league.data.cls.team_stats_record import TeamStatsRecord
 from premier_league.data.cls.appearance_record import AppearanceRecord
 from premier_league.data.cls.event_record import EventRecord
 from premier_league.data.cls.momentum_record import MomentumRecord
-from premier_league.data.cls.match_bundle import MatchBundle
-from premier_league.match_statistics.utils.helper import _int, _get, stat_value, stat_total, split_pct, to_num, _pct_ratio
+from premier_league.data.cls.match_bundle import MatchBundle, ParseContext
+from premier_league.match_statistics.utils.helper import _int, _get, stat_value, stat_total, split_pct, to_num, _pct_ratio, upsert, replace_rows, season_name_for, insert_rows
 from premier_league.match_statistics.utils.map import TEAM_STAT_MAP, TEAM_FRACTION_MAP, TEAM_IGNORED, SHOT_OUTCOME, BODY_PART, PLAYER_IGNORED, PLAYER_FRACTION_MAP, PLAYER_STAT_MAP
-
+from dataclasses import asdict
 import sqlite3
-
+from typing import Optional
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import json, time
 
 OUT = Path("matches")
 OUT.mkdir(exist_ok=True)
+SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
 class MatchPipeline(BaseDataSetScrapper):
     def __init__(self, db_name="matches.db"):
         super().__init__()
         self.matches = None
         self.conn = sqlite3.connect(db_name)
+        self.conn.execute("PRAGMA foreign_keys = ON")
+        self.initialize()
+        self._season_cache = {}
+        self.global_unmapped_keys = set()
+
+    def initialize(self):
+        with SCHEMA_PATH.open() as f:
+            self.conn.executescript(f.read())
+        self.conn.commit()
+
 
     def process_data(self):
         urls = []
@@ -68,7 +79,6 @@ class MatchPipeline(BaseDataSetScrapper):
         data = json.loads(script)
 
         fixtures = data["props"]["pageProps"]["fixtures"]["allMatches"]
-        import pdb; pdb.set_trace()
         self.matches = [(int(m["id"]), m["pageUrl"]) for m in fixtures]
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
@@ -99,18 +109,142 @@ class MatchPipeline(BaseDataSetScrapper):
                     print(f"timeout on {mid}, skipping")
                     continue
 
-
-    def insert_into_db(self, season):
-        for mid, pageUrl in self.matches:
-            out_file = OUT / f"{mid}.json"
-            if not out_file.exists():
+    def inject_data(self):
+        for file in sorted(OUT.glob("*.json")):
+            try:
+                data = json.loads(file.read_text())
+            except json.JSONDecodeError as e:
+                print(f"CORRUPT {file.name}: {e}")
                 continue
 
-            with out_file.open() as f:
-                data = json.load(f)
+            bundle = self.parse_match(data)
+
+            errors = bundle.validate()
+            if not bundle.is_insertable:
+                print(f"SKIP {file.name}: {errors}")
+                continue
+            if errors or bundle.warnings:
+                print(f"{file.name}: {errors + bundle.warnings}")
+            if bundle.unmapped_keys:
+                self.global_unmapped_keys.update(bundle.unmapped_keys)
+                print(f"{file.name}: NEW FOTMOB KEYS {bundle.unmapped_keys}")
+
+            with self.conn:
+                try:
+                    self.insert_bundle(bundle)
+                except Exception as e:
+                    print(e)
+                    import pdb; pdb.set_trace()
+
+    def parse_match(self, data: dict) -> MatchBundle:
+        ctx = ParseContext()
+        m = self._parse_match(data, ctx)
+        return MatchBundle(
+            match=m,
+            team_stats=self._parse_team_stats(data, m, ctx),
+            appearances=self._parse_appearances(data, m, ctx),
+            events=self._parse_events(data, m),
+            shots=self._parse_shots(data, m, ctx),
+            players=self._parse_players(data),
+            coaches=self._parse_coaches(data, m),
+            momentum=self._parse_momentum(data, m),
+            warnings=ctx.warnings,
+            unmapped_keys=ctx.unmapped_keys,
+        )
+
+
+    def _get_or_create_season(self, m: MatchRecord) -> int:
+        league_id = m.league_id or 0
+        name = season_name_for(m)
+        key = (league_id, name)
+        if key in self._season_cache:
+            return self._season_cache[key]
+        self.conn.execute("INSERT OR IGNORE INTO leagues (id, name) VALUES (?, ?)",
+                          (league_id, m.league_name or "<unknown>"))
+        row = self.conn.execute("SELECT id FROM seasons WHERE league_id=? AND name=?",
+                                (league_id, name)).fetchone()
+        sid = row[0] if row else self.conn.execute(
+            "INSERT INTO seasons (league_id, name) VALUES (?, ?)",
+            (league_id, name)).lastrowid
+        self._season_cache[key] = sid
+        return sid
+
+    def insert_bundle(self, bundle: MatchBundle):
+        """FK order: league/season -> teams -> players -> coaches -> match ->
+        children. Call inside `with self.conn:` (one transaction per match)."""
+        m = bundle.match
+        season_id = self._get_or_create_season(m)
+
+        # teams
+        for tid, tname in ((m.home_team_id, m.home_team_name),
+                           (m.away_team_id, m.away_team_name)):
+            if tid:
+                upsert(self.conn, "teams", {"id": tid, "name": tname or "<unknown>"})
+
+        # players: enriched master data (coalesce: never downgrade a known
+        # name/nationality to NULL), then stubs for ids only seen in events/shots
+        known = set()
+        for p in bundle.players:
+            row = asdict(p)
+            row.pop("is_goalkeeper", None)
+            row["name"] = row["name"] or "<unknown>"
+            upsert(self.conn, "players", row, coalesce=True)
+            known.add(p.id)
+
+        # player stubs: ids referenced anywhere without master data
+        referenced = ({e.player_id for e in bundle.events}
+                      | {e.related_player_id for e in bundle.events}
+                      | {s.player_id for s in bundle.shots}
+                      | {s.keeper_id for s in bundle.shots}
+                      | {a.player_id for a in bundle.appearances})
+        for pid in referenced - known - {None}:
+            self.conn.execute(
+                "INSERT OR IGNORE INTO players (id, name) VALUES (?, '<unknown>')", (pid,))
+
+        # team stubs: alt ids the remap couldn't resolve
+        known_teams = {m.home_team_id, m.away_team_id}
+        referenced_teams = ({a.team_id for a in bundle.appearances}
+                            | {s.team_id for s in bundle.shots}
+                            | {t.team_id for t in bundle.team_stats}) - known_teams - {None}
+        for tid in referenced_teams:
+            self.conn.execute(
+                "INSERT OR IGNORE INTO teams (id, name) VALUES (?, '<unknown>')", (tid,))
+
+        for c in bundle.coaches:
+            upsert(self.conn, "coaches",
+                   {"id": c.coach_id, "name": c.name or "<unknown>",
+                    "first_name": c.first_name, "last_name": c.last_name,
+                    "country_code": c.country_code, "country_name": c.country_name},
+                   coalesce=True)
+
+        row = asdict(m)
+        for k in ("league_id", "parent_league_id", "league_name", "home_team_name",
+                  "away_team_name", "coverage_level", "finished", "cancelled"):
+            row.pop(k, None)
+        row["season_id"] = season_id
+        upsert(self.conn, "matches", row)
+
+        # natural-PK children: OR REPLACE is idempotent
+        replace_rows(self.conn, "match_team_stats", [asdict(t) for t in bundle.team_stats])
+        apps = []
+        for a in bundle.appearances:
+            d = asdict(a)
+            d.pop("player_name", None)
+            apps.append(d)
+        replace_rows(self.conn, "appearances", apps)
+        replace_rows(self.conn, "match_coaches",
+                     [{"match_id": c.match_id, "team_id": c.team_id, "coach_id": c.coach_id}
+                      for c in bundle.coaches])
+        replace_rows(self.conn, "match_momentum", [asdict(x) for x in bundle.momentum])
+
+        # surrogate-PK children: delete-then-insert or they duplicate on re-run
+        self.conn.execute("DELETE FROM match_events WHERE match_id = ?", (m.id,))
+        self.conn.execute("DELETE FROM shots WHERE match_id = ?", (m.id,))
+        insert_rows(self.conn, "match_events", [asdict(e) for e in bundle.events])
+        insert_rows(self.conn, "shots", [asdict(s) for s in bundle.shots])
 
     @staticmethod
-    def _parse_match(data: dict, bundle: MatchBundle) -> MatchRecord:
+    def _parse_match(data: dict, ctx: ParseContext) -> MatchRecord:
         g = data.get("general") or {}
         status = _get(data, "header", "status", default={}) or {}
         info = _get(data, "content", "matchFacts", "infoBox", default={}) or {}
@@ -174,12 +308,12 @@ class MatchPipeline(BaseDataSetScrapper):
                 break
 
         if m.id is None:
-            bundle.warnings.append("general.matchId missing")
+            ctx.warnings.append("general.matchId missing")
         return m
 
     @staticmethod
     def _parse_team_stats_period(period: str, groups: list, m: MatchRecord,
-                                 bundle: MatchBundle) -> list[TeamStatsRecord]:
+                                 ctx: ParseContext) -> list[TeamStatsRecord]:
         pairs: dict[str, list] = {}
         for group in groups:
             for item in group.get("stats") or []:
@@ -209,7 +343,7 @@ class MatchPipeline(BaseDataSetScrapper):
                     n = to_num(v)
                     setattr(rec, col, n)
             elif key not in TEAM_IGNORED:
-                bundle.unmapped_keys.add(f"team:{key}")
+                ctx.unmapped_keys.add(f"team:{key}")
 
         # derive pass accuracy if missing but counts present
         for rec in (home, away):
@@ -217,7 +351,7 @@ class MatchPipeline(BaseDataSetScrapper):
                 rec.pass_accuracy_pct = _pct_ratio(rec.accurate_passes, rec.total_passes)
         return [home, away]
 
-    def _parse_team_stats(self, data: dict, m: MatchRecord, bundle: MatchBundle) -> list[TeamStatsRecord]:
+    def _parse_team_stats(self, data: dict, m: MatchRecord, ctx: ParseContext) -> list[TeamStatsRecord]:
         """One home+away pair per period FotMob provides ('All', 'FirstHalf',
         'SecondHalf', extra-time keys in cup games). Iterated dynamically so new
         period names flow through without a code change."""
@@ -225,10 +359,10 @@ class MatchPipeline(BaseDataSetScrapper):
         out: list[TeamStatsRecord] = []
         for period, block in periods.items():
             groups = (block or {}).get("stats") or []
-            out.extend(self._parse_team_stats_period(period, groups, m, bundle))
+            out.extend(self._parse_team_stats_period(period, groups, m, ctx))
 
         if not any(r.period == "All" for r in out):
-            bundle.warnings.append("no team stats (content.stats.Periods.All empty — low coverage?)")
+            ctx.warnings.append("no team stats (content.stats.Periods.All empty — low coverage?)")
 
         # formations are full-match facts -> attach to the 'All' rows only
         for rec in out:
@@ -251,6 +385,7 @@ class MatchPipeline(BaseDataSetScrapper):
                         continue
                     perf = p.get("performance") or {}
                     entry = {
+                        "is_home_side": side == "homeTeam",
                         "is_starter": is_starter,
                         "shirt_number": _int(p.get("shirtNumber")),
                         "minute_entered": 0 if is_starter else None,
@@ -272,9 +407,33 @@ class MatchPipeline(BaseDataSetScrapper):
                     out[pid] = entry
         return out
 
-    def _parse_appearances(self, data: dict, m: MatchRecord, bundle: MatchBundle) -> list[AppearanceRecord]:
+    @staticmethod
+    def _remap_team_id(team_id, m: MatchRecord, li: Optional[dict],
+                       alt_map: dict, unresolved: set):
+        """Old FotMob payloads sometimes use an ALTERNATE team id in playerStats
+        (e.g. Juventus 956184 vs canonical 9885). A match only has two teams, so
+        resolve via the player's lineup side, LEARNING the alt->canonical mapping
+        in alt_map. Rows that can't resolve directly (player not in lineup) get a
+        second chance in the caller's post-pass: if any lineup player taught us
+        the same alt id, apply that mapping. Truly unresolvable ids stay as-is
+        (insert-side team stub is the last-resort safety net)."""
+        if team_id is None or team_id in (m.home_team_id, m.away_team_id):
+            return team_id
+        side = li.get("is_home_side") if li else None
+        if side:
+            alt_map[team_id] = m.home_team_id
+            return m.home_team_id
+        if side is False:
+            alt_map[team_id] = m.away_team_id
+            return m.away_team_id
+        unresolved.add(team_id)
+        return team_id
+
+    def _parse_appearances(self, data: dict, m: MatchRecord, ctx: ParseContext) -> list[AppearanceRecord]:
         pstats = _get(data, "content", "playerStats", default={}) or {}
         lineup = self._lineup_index(data)
+        alt_map: dict = {}
+        unresolved: set = set()
         out: list[AppearanceRecord] = []
 
         for pid_str, p in pstats.items():
@@ -288,6 +447,7 @@ class MatchPipeline(BaseDataSetScrapper):
             )
 
             li = lineup.get(pid)
+            rec.team_id = self._remap_team_id(rec.team_id, m, li, alt_map, unresolved)
             if li:
                 rec.is_starter = li["is_starter"]
                 rec.is_substitute = not li["is_starter"]
@@ -323,7 +483,7 @@ class MatchPipeline(BaseDataSetScrapper):
                     if n is not None:
                         setattr(rec, col, caster(n))
                 elif key not in PLAYER_IGNORED:
-                    bundle.unmapped_keys.add(f"player:{key}")
+                    ctx.unmapped_keys.add(f"player:{key}")
 
             # duels_attempted = won + lost (lost isn't stored on its own)
             lost = to_num(stat_value(flat.get("duel_lost")))
@@ -335,10 +495,26 @@ class MatchPipeline(BaseDataSetScrapper):
                 rec.clean_sheet = rec.goals_conceded == 0
 
             out.append(rec)
+
+        # second pass: rows that couldn't resolve directly (player not in lineup)
+        # inherit the mapping other players taught us for the same alt id
+        if unresolved & set(alt_map):
+            for rec in out:
+                if rec.team_id in alt_map:
+                    rec.team_id = alt_map[rec.team_id]
+            unresolved -= set(alt_map)
+
+        if alt_map:
+            ctx.warnings.append(
+                f"remapped alt team ids {sorted(alt_map)} -> canonical home/away")
+        if unresolved:
+            ctx.warnings.append(
+                f"UNRESOLVED foreign team ids {sorted(unresolved)} in appearances "
+                f"(no lineup evidence for this alt id)")
         return out
 
     @staticmethod
-    def _parse_events(data: dict, m: MatchRecord, bundle: MatchBundle) -> list[EventRecord]:
+    def _parse_events(data: dict, m: MatchRecord) -> list[EventRecord]:
         events = _get(data, "content", "matchFacts", "events", "events", default=[]) or []
         out: list[EventRecord] = []
         for i, ev in enumerate(events):
@@ -357,7 +533,7 @@ class MatchPipeline(BaseDataSetScrapper):
                 away_score=_int(ev.get("awayScore")),
                 sort_order=i,
             )
-            if rec.is_home is True:
+            if rec.is_home:
                 rec.team_id = m.home_team_id
             elif rec.is_home is False:
                 rec.team_id = m.away_team_id
@@ -389,7 +565,7 @@ class MatchPipeline(BaseDataSetScrapper):
         return out
 
     @staticmethod
-    def _parse_shots(data: dict, m: MatchRecord, bundle: MatchBundle) -> list[ShotRecord]:
+    def _parse_shots(data: dict, m: MatchRecord, ctx: ParseContext) -> list[ShotRecord]:
         shots = _get(data, "content", "shotmap", "shots", default=[]) or []
         out: list[ShotRecord] = []
         for s in shots:
@@ -439,11 +615,10 @@ class MatchPipeline(BaseDataSetScrapper):
                 is_header=s.get("shotType") == "Header",
             ))
         if not shots:
-            bundle.warnings.append("no shotmap (pre-xG season or low coverage)")
+            ctx.warnings.append("no shotmap (pre-xG season or low coverage)")
         return out
 
-    @staticmethod
-    def _parse_players(self, data: dict, bundle: MatchBundle) -> list[PlayerRecord]:
+    def _parse_players(self, data: dict) -> list[PlayerRecord]:
         """Master-data for the players upsert: names + optaId from playerStats,
         nationality/full names from the lineup block."""
         pstats = _get(data, "content", "playerStats", default={}) or {}
@@ -467,7 +642,7 @@ class MatchPipeline(BaseDataSetScrapper):
         return out
 
     @staticmethod
-    def _parse_coaches(data: dict, m: MatchRecord, bundle: MatchBundle) -> list[MatchCoachRecord]:
+    def _parse_coaches(data: dict, m: MatchRecord) -> list[MatchCoachRecord]:
         out: list[MatchCoachRecord] = []
         for side, team_id in (("homeTeam", m.home_team_id), ("awayTeam", m.away_team_id)):
             c = _get(data, "content", "lineup", side, "coach", default=None)
@@ -486,7 +661,7 @@ class MatchPipeline(BaseDataSetScrapper):
         return out
 
     @staticmethod
-    def _parse_momentum(data: dict, m: MatchRecord, bundle: MatchBundle) -> list[MomentumRecord]:
+    def _parse_momentum(data: dict, m: MatchRecord) -> list[MomentumRecord]:
         points = (_get(data, "content", "momentum", "main", "data")
                   or _get(data, "content", "matchFacts", "momentum", "main", "data")
                   or [])
@@ -500,8 +675,3 @@ class MatchPipeline(BaseDataSetScrapper):
             out.append(MomentumRecord(match_id=m.id, minute=minute,
                                       value=to_num(pt.get("value"))))
         return out
-
-
-if __name__ == '__main__':
-    scraper = MatchPipeline()
-    scraper.process_data()

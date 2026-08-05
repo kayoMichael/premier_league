@@ -1,5 +1,8 @@
 import re
 from typing import Any, Optional
+from premier_league.data.cls.match_record import MatchRecord
+
+MLS_CALENDAR_LEAGUES = {130, 10000002}   # MLS seasons are calendar years
 
 _NUM_PCT = re.compile(r"^\s*(-?\d+(?:[.,]\d+)?)\s*(?:\(\s*(\d+(?:[.,]\d+)?)\s*%\s*\))?\s*$")
 
@@ -76,3 +79,48 @@ def _pct_ratio(value, total) -> Optional[float]:
     if v is None or not t:
         return None
     return round(100.0 * v / t, 1)
+
+
+def upsert(conn, table: str, row: dict, pk: tuple = ("id",), coalesce: bool = False):
+    """INSERT .. ON CONFLICT DO UPDATE. Never DELETE+re-INSERT (unlike OR
+    REPLACE), so FK children survive re-ingest. coalesce=True: only fill
+    gaps, never overwrite an existing non-NULL value with NULL."""
+    cols = ", ".join(row)
+    ph = ", ".join(f":{c}" for c in row)
+    if coalesce:
+        sets = ", ".join(f"{c}=COALESCE(excluded.{c}, {c})" for c in row if c not in pk)
+    else:
+        sets = ", ".join(f"{c}=excluded.{c}" for c in row if c not in pk)
+    conn.execute(f"INSERT INTO {table} ({cols}) VALUES ({ph}) "
+                 f"ON CONFLICT({', '.join(pk)}) DO UPDATE SET {sets}", row)
+
+
+def replace_rows(conn, table: str, rows: list[dict]):
+    """For NATURAL-composite-PK child tables only (match_team_stats,
+    appearances, match_coaches, match_momentum) — OR REPLACE is idempotent
+    there because re-ingest hits the same PK."""
+    if not rows:
+        return
+    cols = ", ".join(rows[0])
+    ph = ", ".join(f":{c}" for c in rows[0])
+    conn.executemany(f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({ph})", rows)
+
+
+def insert_rows(conn, table: str, rows: list[dict]):
+    """Plain insert, for surrogate-PK tables AFTER a delete-by-match_id."""
+    if not rows:
+        return
+    cols = ", ".join(rows[0])
+    ph = ", ".join(f":{c}" for c in rows[0])
+    conn.executemany(f"INSERT INTO {table} ({cols}) VALUES ({ph})", rows)
+
+
+def season_name_for(m: MatchRecord) -> str:
+    """'2024' for MLS-style calendar leagues, '2024-2025' for cross-year."""
+    if not m.kickoff_time_utc:
+        return "unknown"
+    year, month = int(m.kickoff_time_utc[:4]), int(m.kickoff_time_utc[5:7])
+    if m.league_id in MLS_CALENDAR_LEAGUES or m.parent_league_id in MLS_CALENDAR_LEAGUES:
+        return str(year)
+    start = year if month >= 7 else year - 1
+    return f"{start}-{start + 1}"
