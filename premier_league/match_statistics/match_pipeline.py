@@ -133,7 +133,8 @@ class MatchPipeline(BaseDataSetScrapper):
                 try:
                     self.insert_bundle(bundle)
                 except Exception as e:
-                    print(e)
+                    import traceback
+                    traceback.print_exc()
                     import pdb; pdb.set_trace()
 
     def parse_match(self, data: dict) -> MatchBundle:
@@ -219,7 +220,7 @@ class MatchPipeline(BaseDataSetScrapper):
 
         row = asdict(m)
         for k in ("league_id", "parent_league_id", "league_name", "home_team_name",
-                  "away_team_name", "coverage_level", "finished", "cancelled"):
+                  "away_team_name", "finished", "cancelled"):
             row.pop(k, None)
         row["season_id"] = season_id
         upsert(self.conn, "matches", row)
@@ -248,7 +249,6 @@ class MatchPipeline(BaseDataSetScrapper):
         g = data.get("general") or {}
         status = _get(data, "header", "status", default={}) or {}
         info = _get(data, "content", "matchFacts", "infoBox", default={}) or {}
-
         m = MatchRecord(
             id=_int(g.get("matchId")),
             league_id=_int(g.get("leagueId")),
@@ -675,3 +675,9 @@ class MatchPipeline(BaseDataSetScrapper):
             out.append(MomentumRecord(match_id=m.id, minute=minute,
                                       value=to_num(pt.get("value"))))
         return out
+
+
+if __name__ == '__main__':
+    scraper = MatchPipeline()
+    scraper.inject_data()
+    print(scraper.global_unmapped_keys)

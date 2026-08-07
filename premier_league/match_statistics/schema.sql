@@ -246,6 +246,7 @@ CREATE TABLE IF NOT EXISTS matches (
     stadium_name             TEXT,
     stadium_city             TEXT,
     stadium_country          TEXT,
+    coverage_level           TEXT,
     stadium_lat              REAL,
     stadium_long             REAL,
     stadium_capacity         INTEGER,

@@ -123,4 +123,11 @@ def season_name_for(m: MatchRecord) -> str:
     if m.league_id in MLS_CALENDAR_LEAGUES or m.parent_league_id in MLS_CALENDAR_LEAGUES:
         return str(year)
     start = year if month >= 7 else year - 1
+
+    # COVID-restart guard: a July/August match at a DEEP round number is the
+    # tail of the previous season (2019-20 restart), not an early start of
+    # the new one. Normal July/August matches are rounds 1-4; restart rounds
+    # were 28-38. Threshold 10 splits them with huge margin on both sides.
+    if month in (7, 8) and (int(m.round) or int(m.round_name) or 0) > 10:
+        start -= 1
     return f"{start}-{start + 1}"

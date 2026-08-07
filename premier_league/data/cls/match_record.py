@@ -4,7 +4,6 @@ from dataclasses import dataclass
 @dataclass
 class MatchRecord:
     id: Optional[int] = None
-    # season hints — pipeline resolves these to seasons.id before insert
     league_id: Optional[int] = None
     parent_league_id: Optional[int] = None
     league_name: Optional[str] = None
