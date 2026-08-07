@@ -272,12 +272,13 @@ class BaseDataSetScrapper:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         self.pages = []
+        self.requests = requests_cache.CachedSession(cache_dir)
 
     def fetch_page(
         self, url, pbar, rate_limit, return_html
     ) -> Union[etree.ElementTree, str, None]:
         """
-        Fetch a page from the given URL with rate limits and progress bar.
+        Fetch a page from the given URL with rate limits and progress bar. Only rate limits on cache miss
 
         Args:
             url (str): The URL to fetch.
@@ -286,7 +287,7 @@ class BaseDataSetScrapper:
             return_html (bool): Whether to return the HTML content as a string.
         """
         try:
-            response = requests.get(
+            response = self.requests.get(
                 url,
                 headers={
                     "User-Agent": (
@@ -307,8 +308,9 @@ class BaseDataSetScrapper:
 
             html = response.text
             pbar.update(1)
-            time.sleep(rate_limit)
-            return etree.HTML(html) if return_html else html
+            if not response.from_cache:
+                time.sleep(rate_limit)
+            return etree.HTML(html) if not return_html else html
 
         except Exception as e:
             print(f"Error fetching {url}: {e}")
@@ -316,7 +318,7 @@ class BaseDataSetScrapper:
 
     def scrape_and_process_all(
         self,
-        urls,
+        urls: list,
         rate_limit=1,
         return_html=True,
         desc="Scraping Progress",
