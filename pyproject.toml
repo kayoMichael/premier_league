@@ -33,6 +33,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "SQLAlchemy>=2.0.38",
     "appdirs>=1.4.4",
+    "playwright>=1.60.0",
 ]
 
 [project.optional-dependencies]

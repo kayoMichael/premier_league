@@ -3,6 +3,7 @@ import json
 import os
 import re
 from typing import Optional, Union
+from datetime import datetime
 
 
 def remove_duplicates(seq) -> list:
@@ -203,3 +204,10 @@ def extract_date_league_from_url(url):
         return match.group(1), match.group(2)
 
     return None, None
+
+
+def current_season() -> int:
+    if datetime.today().month > 8:
+        return int(datetime.today().year)
+
+    return int(datetime.today().year) - 1

@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
+MATCH_STATISTICS_LEAGUE = ["la liga", "premier league", "serie a", "bundesliga", "ligue 1", "mls"]
+
 
 class PredictorURL:
     BASE_URLS = {
@@ -20,6 +22,25 @@ class PredictorURL:
                 f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
             )
         return cls.BASE_URLS[league.lower()].format(SEASON=season)
+
+class MatchUrl:
+    BASE_URLS = {
+        "premier league": "https://www.fotmob.com/leagues/47/{TYPE}/premier-league",
+        "la liga": "https://www.fotmob.com/leagues/87/{TYPE}/laliga",
+        "serie a": "https://www.fotmob.com/leagues/55/{TYPE}/serie",
+        "ligue 1": "https://www.fotmob.com/leagues/53/{TYPE}/ligue-1",
+        "bundesliga": "https://www.fotmob.com/leagues/54/{TYPE}/bundesliga",
+        "mls": "https://www.fotmob.com/leagues/130/{TYPE}/mls"
+    }
+
+    @classmethod
+    def get(cls, league: str, page_type: str) -> str:
+        """Returns all formatted URLs for the given season."""
+        if league.lower() not in cls.BASE_URLS:
+            raise ValueError(
+                f"League {league} not found. The Available Leagues are: {', '.join(cls.BASE_URLS.keys())}"
+            )
+        return cls.BASE_URLS[league.lower()].format(TYPE=page_type)
 
 
 class RANKING_URL:

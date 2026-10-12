@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Protocol, Any
 
 
 class RANKING:
@@ -30,3 +30,11 @@ class MATCHES:
     GAME_VENUE_DATE: str = "./span//@data-venue-date"
     GAME_VENUE_TIME: str = "./span//@data-venue-time"
     GAME_GOALS: str = './/div[@class="score"]//text()'
+    MATCH_URLS: str = '//script[@id="__NEXT_DATA__"]/text()'
+
+
+class XPathElement(Protocol):
+    def xpath(self, expr: str, *args: Any, **kwargs: Any) -> Any: ...
+
+    @property
+    def text(self) -> Optional[str]: ...
