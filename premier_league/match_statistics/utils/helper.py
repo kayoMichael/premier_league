@@ -128,6 +128,6 @@ def season_name_for(m: MatchRecord) -> str:
     # tail of the previous season (2019-20 restart), not an early start of
     # the new one. Normal July/August matches are rounds 1-4; restart rounds
     # were 28-38. Threshold 10 splits them with huge margin on both sides.
-    if month in (7, 8) and (int(m.round) or int(m.round_name) or 0) > 10:
+    if month in (7, 8) and m.round is not None and m.round_name is not None and (int(m.round) or int(m.round_name) or 0) > 10:
         start -= 1
     return f"{start}-{start + 1}"

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 from premier_league.data.cls.match_record import MatchRecord
 from premier_league.data.cls.shot_record import ShotRecord
 from premier_league.data.cls.player_record import PlayerRecord
@@ -7,6 +8,7 @@ from premier_league.data.cls.team_stats_record import TeamStatsRecord
 from premier_league.data.cls.appearance_record import AppearanceRecord
 from premier_league.data.cls.event_record import EventRecord
 from premier_league.data.cls.momentum_record import MomentumRecord
+from premier_league.data.cls.weather_record import WeatherRecord
 
 
 @dataclass
@@ -29,6 +31,7 @@ class MatchBundle:
     players: list[PlayerRecord] = field(default_factory=list)
     coaches: list[MatchCoachRecord] = field(default_factory=list)
     momentum: list[MomentumRecord] = field(default_factory=list)
+    weather: Optional[WeatherRecord] = None   # 1:1 optional, 2025+ only
     warnings: list[str] = field(default_factory=list)
     unmapped_keys: set[str] = field(default_factory=set)
 

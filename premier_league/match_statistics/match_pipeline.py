@@ -10,6 +10,7 @@ from premier_league.data.cls.team_stats_record import TeamStatsRecord
 from premier_league.data.cls.appearance_record import AppearanceRecord
 from premier_league.data.cls.event_record import EventRecord
 from premier_league.data.cls.momentum_record import MomentumRecord
+from premier_league.data.cls.weather_record import WeatherRecord
 from premier_league.data.cls.match_bundle import MatchBundle, ParseContext
 from premier_league.match_statistics.utils.helper import _int, _get, stat_value, stat_total, split_pct, to_num, _pct_ratio, upsert, replace_rows, season_name_for, insert_rows
 from premier_league.match_statistics.utils.map import TEAM_STAT_MAP, TEAM_FRACTION_MAP, TEAM_IGNORED, SHOT_OUTCOME, BODY_PART, PLAYER_IGNORED, PLAYER_FRACTION_MAP, PLAYER_STAT_MAP
@@ -38,7 +39,6 @@ class MatchPipeline(BaseDataSetScrapper):
         with SCHEMA_PATH.open() as f:
             self.conn.executescript(f.read())
         self.conn.commit()
-
 
     def process_data(self):
         urls = []
@@ -135,7 +135,6 @@ class MatchPipeline(BaseDataSetScrapper):
                 except Exception as e:
                     import traceback
                     traceback.print_exc()
-                    import pdb; pdb.set_trace()
 
     def parse_match(self, data: dict) -> MatchBundle:
         ctx = ParseContext()
@@ -149,6 +148,7 @@ class MatchPipeline(BaseDataSetScrapper):
             players=self._parse_players(data),
             coaches=self._parse_coaches(data, m),
             momentum=self._parse_momentum(data, m),
+            weather=self._parse_weather(data, m),
             warnings=ctx.warnings,
             unmapped_keys=ctx.unmapped_keys,
         )
@@ -243,6 +243,9 @@ class MatchPipeline(BaseDataSetScrapper):
         self.conn.execute("DELETE FROM shots WHERE match_id = ?", (m.id,))
         insert_rows(self.conn, "match_events", [asdict(e) for e in bundle.events])
         insert_rows(self.conn, "shots", [asdict(s) for s in bundle.shots])
+        if bundle.weather:
+            upsert(self.conn, "match_weather", asdict(bundle.weather),
+                   pk=("match_id",), coalesce=True)
 
     @staticmethod
     def _parse_match(data: dict, ctx: ParseContext) -> MatchRecord:
@@ -675,6 +678,33 @@ class MatchPipeline(BaseDataSetScrapper):
             out.append(MomentumRecord(match_id=m.id, minute=minute,
                                       value=to_num(pt.get("value"))))
         return out
+
+    @staticmethod
+    def _parse_weather(data: dict, m: MatchRecord) -> Optional[WeatherRecord]:
+        """content.weather -> WeatherRecord, or None when absent.
+
+        FotMob proxies weather.com and does not backfill, so this is only
+        present from 2025 onward (~9% of matches). Readings land 1-5h after
+        kickoff, i.e. genuine match-day weather, not scrape-day.
+        precipChance/validTimeUtc also appear here; no columns, dropped."""
+        w = _get(data, "content", "weather")
+        if not isinstance(w, dict) or not w:
+            return None
+        return WeatherRecord(
+            match_id=m.id,
+            temperature=to_num(w.get("temperature")),
+            wind_speed=to_num(w.get("windSpeed")),
+            wind_direction=w.get("windDirectionCardinal"),
+            icon_code=_int(w.get("iconCode")),
+            humidity_pct=to_num(w.get("relativeHumidity")),
+            precipitation=to_num(w.get("precipitation")),
+            snow=to_num(w.get("snow")),
+            cloud_cover_pct=to_num(w.get("cloudCover")),
+            description=w.get("description"),
+            localized_key=w.get("localizedKey"),
+            default_title=w.get("defaultTitle"),
+            last_updated=w.get("lastUpdated"),
+        )
 
 
 if __name__ == '__main__':
